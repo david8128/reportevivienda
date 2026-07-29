@@ -2,7 +2,7 @@
 MAPEO DE SELECTORES - FINCARAIZ.COM
 Campo: PISO (Número de piso del apartamento)
 Última revisión: 2026-07-28
-Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+Estado: VERIFICADO - 2026-07-28
 ================================================================
 
 DESCRIPCIÓN DEL CAMPO:
@@ -13,16 +13,18 @@ DESCRIPCIÓN DEL CAMPO:
 ------------------------------------------------------------------
 SELECTORES CSS PRIMARIOS (probar en orden):
 ------------------------------------------------------------------
-[1] [class*="piso"], [class*="floor"]
-[2] [data-feature="piso"], [data-id="floor"]
-[3] li:has(span:contains("Piso")) strong
-[4] li:has(span:contains("Piso")) .value
-[5] .ficha-inmueble__piso
-[6] .caracteristicas [class*="floor"]
-[7] [data-testid="floor"]
-[8] .icono-piso ~ span
-[9] td:has(strong:contains("Piso")) + td
-[10] .property-floor
+[1] .technical-sheet .ant-row (fila cuyo texto contiene "Piso N°")
+[2] .technical-sheet (extraer con regex: Piso N° seguido del valor)
+[3] [class*="piso"], [class*="floor"]
+[4] [data-feature="piso"], [data-id="floor"]
+[5] li:has(span:contains("Piso")) strong
+[6] li:has(span:contains("Piso")) .value
+[7] .ficha-inmueble__piso
+[8] .caracteristicas [class*="floor"]
+[9] [data-testid="floor"]
+[10] .icono-piso ~ span
+[11] td:has(strong:contains("Piso")) + td
+[12] .property-floor
 
 ------------------------------------------------------------------
 XPATH:
@@ -39,6 +41,7 @@ Patrón 1: [Pp]iso[:\s]+(\d{1,3})
 Patrón 2: \bpiso\s+(\d{1,2})\b
 Patrón 3: (\d{1,2})(?:er|do|to|vo|no)?\s*piso
 Patrón 4: piso[:\s]+([Uu]no|[Dd]os|[Tt]res|[Cc]uatro|[Cc]inco|[Ss]eis|[Ss]iete|[Oo]cho|[Nn]ueve|[Dd]iez)
+Patrón 5: Piso\s*N°\s*(\d{1,2})
 
 NORMALIZACIÓN DE NÚMEROS EN TEXTO:
   "primero/primer" → 1
@@ -76,3 +79,6 @@ NOTAS DE IMPLEMENTACIÓN:
 - IMPORTANTE: "Piso 1" = primer piso = planta baja = ground floor
 - "Primer piso" puede referirse al primer nivel interno de la casa (diferente a edificio)
 - Piso ≤ 2 suma +10 puntos en el sistema de puntuación
+- PATCH MODE: al modificar este mapeo, usa Dashboard → Datos → Aplicar parche
+  de mapeo. Selecciona FincaRaiz / Piso para volver a extraer solo este campo
+  de todos los registros FincaRaiz guardados.

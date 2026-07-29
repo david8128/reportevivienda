@@ -8,6 +8,7 @@ const RESPUESTA_SI = new Set(['si', 'sí', 'confirmado_si', true]);
 // Umbrales de respaldo, usados solo si no se reciben filtros (no deberían usarse en producción,
 // ya que la puntuación debe calcularse siempre con los filtros configurados por el usuario).
 const DEFAULT_FILTROS_FALLBACK = {
+    precioMin: 0,
     precioMax: 550000000,
     estratoMax: 4,
     pisoMax: 2,
@@ -26,6 +27,7 @@ function esSi(valor) {
  */
 export function calcularPuntuacionMaxima(pesos) {
     return (
+        pesos.precioMinimo +
         pesos.precioMax550 +
         pesos.estratoMax4 +
         pesos.estratoOptimo3 +
@@ -58,6 +60,7 @@ export function calcularPuntuacion(propiedad, pesos, filtros = {}, opciones = {}
         desglose.push({ criterio, aplica, puntos: otorgados });
     };
 
+    const precioMin = filtros.precioMin ?? DEFAULT_FILTROS_FALLBACK.precioMin;
     const precioMax = filtros.precioMax ?? DEFAULT_FILTROS_FALLBACK.precioMax;
     const estratoMax = filtros.estratoMax ?? DEFAULT_FILTROS_FALLBACK.estratoMax;
     const pisoMax = filtros.pisoMax ?? DEFAULT_FILTROS_FALLBACK.pisoMax;
@@ -66,6 +69,7 @@ export function calcularPuntuacion(propiedad, pesos, filtros = {}, opciones = {}
     const formatoM = (valor) => `${Math.round(valor / 1000000)}M`;
     const formatoK = (valor) => `${Math.round(valor / 1000)}K`;
 
+    agregar(`Precio ≥ ${formatoM(precioMin)}`, propiedad.precio != null && propiedad.precio >= precioMin, pesos.precioMinimo);
     agregar(`Precio ≤ ${formatoM(precioMax)}`, propiedad.precio != null && propiedad.precio <= precioMax, pesos.precioMax550);
     agregar(`Estrato ≤ ${estratoMax}`, propiedad.estrato != null && propiedad.estrato <= estratoMax, pesos.estratoMax4);
     agregar('Estrato == 3 (óptimo)', propiedad.estrato === 3, pesos.estratoOptimo3);

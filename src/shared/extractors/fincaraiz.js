@@ -36,7 +36,9 @@ const SELECTORES = {
         '[data-id="estrato"]'
     ],
     piso: [
-        '[class*="piso"]', '[data-id="floor"]'
+        '[data-testid="floor"]', '[data-feature="piso"]', '[data-id="floor"]',
+        '.ficha-inmueble__piso', '[class*="piso"]', '[class*="floor"]',
+        '.caracteristicas [class*="floor"]', '.icono-piso ~ span', '.property-floor'
     ],
     ubicacion: [
         '.ficha-inmueble__ubicacion', '.property-location',
@@ -99,9 +101,12 @@ export function extractFincaRaiz(doc, url) {
         if (estrato) marcarEstimado(camposEstimados, 'estrato');
     }
 
-    // Piso
-    let piso = parseInt(probarSelectores(doc, SELECTORES.piso) || '', 10);
-    if (!piso || Number.isNaN(piso)) {
+    // Piso: el sitio actual presenta "Piso N°" y su valor dentro de .technical-sheet.
+    // parsePisoTexto evita que textos como "Piso N°\n2" fallen con parseInt().
+    const textoPiso = doc.querySelector('.technical-sheet')?.innerText ||
+        probarSelectores(doc, SELECTORES.piso) || '';
+    let piso = parsePisoTexto(textoPiso);
+    if (piso == null) {
         piso = parsePisoTexto(textoCompleto);
         if (piso != null) marcarEstimado(camposEstimados, 'piso');
     }

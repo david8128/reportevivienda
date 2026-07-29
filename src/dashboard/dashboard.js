@@ -56,6 +56,7 @@ function poblarFormularioFiltros() {
     const f = configActual.filtros;
     document.getElementById('filtro-estrato-max').value = f.estratoMax;
     document.getElementById('valor-estrato-max').textContent = f.estratoMax;
+    document.getElementById('filtro-precio-min').value = f.precioMin;
     document.getElementById('filtro-precio-max').value = f.precioMax;
     document.getElementById('filtro-piso-max').value = String(f.pisoMax);
     document.getElementById('filtro-admin-max').value = f.administracionMax;
@@ -71,6 +72,7 @@ function poblarFormularioFiltros() {
 function leerFormularioFiltros() {
     return {
         estratoMax: parseInt(document.getElementById('filtro-estrato-max').value, 10),
+        precioMin: parseInt(document.getElementById('filtro-precio-min').value, 10),
         precioMax: parseInt(document.getElementById('filtro-precio-max').value, 10),
         pisoMax: parseInt(document.getElementById('filtro-piso-max').value, 10),
         administracionMax: parseInt(document.getElementById('filtro-admin-max').value, 10),
@@ -83,9 +85,10 @@ function leerFormularioFiltros() {
 document.getElementById('btn-guardar-filtros').addEventListener('click', async () => {
     const filtros = leerFormularioFiltros();
     configActual = await saveConfig({ filtros });
-    mostrarToast('Filtros guardados');
     poblarFormularioPesos();
+    await recalcularTodas();
     await cargarYRenderizarTabla();
+    mostrarToast('Filtros guardados y puntuaciones actualizadas');
 });
 
 /* ------------------------------------------------------------------ */
@@ -105,6 +108,7 @@ function formatoMiles(valor) {
 
 function obtenerEtiquetasPesos(filtros) {
     return {
+        precioMinimo: `Precio ≥ ${formatoMillones(filtros.precioMin)}`,
         precioMax550: `Precio ≤ ${formatoMillones(filtros.precioMax)}`,
         estratoMax4: `Estrato ≤ ${filtros.estratoMax}`,
         estratoOptimo3: 'Estrato == 3 (óptimo)',
@@ -482,6 +486,26 @@ document.getElementById('input-importar-config').addEventListener('change', asyn
         mostrarToast(`Error al importar configuración: ${err.message}`);
     }
     e.target.value = '';
+});
+
+document.getElementById('btn-aplicar-patch-mapeo').addEventListener('click', async () => {
+    const origen = document.getElementById('patch-mapeo-origen').value;
+    const campo = document.getElementById('patch-mapeo-campo').value;
+    if (!confirm(`¿Volver a extraer el campo "${campo}" de todos los registros ${origen}?`)) return;
+
+    const boton = document.getElementById('btn-aplicar-patch-mapeo');
+    boton.disabled = true;
+    mostrarToast(`Aplicando parche ${origen}/${campo}...`, 0);
+    try {
+        const resultado = await enviarMensaje({ type: MSG.APLICAR_PATCH_MAPEO, origen, campo });
+        if (!resultado?.ok) throw new Error(resultado?.error || 'No fue posible aplicar el parche.');
+        mostrarToast(`Parche aplicado: ${resultado.actualizadas}/${resultado.total} actualizadas${resultado.fallidas ? `, ${resultado.fallidas} fallidas` : ''}`);
+        await cargarYRenderizarTabla();
+    } catch (error) {
+        mostrarToast(`Error al aplicar parche: ${error.message}`);
+    } finally {
+        boton.disabled = false;
+    }
 });
 
 async function renderLimpieza() {

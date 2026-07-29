@@ -8,6 +8,7 @@ export const CONFIG_STORAGE_KEY = 'rv_config';
 
 export const DEFAULT_FILTERS = {
     estratoMax: 4,
+    precioMin: 0,
     precioMax: 550000000,
     pisoMax: 2,
     administracionMax: 300000,
@@ -17,6 +18,7 @@ export const DEFAULT_FILTERS = {
 };
 
 export const DEFAULT_WEIGHTS = {
+    precioMinimo: 10,
     precioMax550: 20,
     estratoMax4: 15,
     estratoOptimo3: 5,

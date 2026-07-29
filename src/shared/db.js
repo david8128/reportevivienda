@@ -204,6 +204,7 @@ export async function obtenerPropiedadesFiltradas(filtros) {
 export function cumpleFiltros(propiedad, filtros) {
     if (!filtros) return true;
     if (filtros.estratoMax != null && propiedad.estrato != null && propiedad.estrato > filtros.estratoMax) return false;
+    if (filtros.precioMin != null && propiedad.precio != null && propiedad.precio < filtros.precioMin) return false;
     if (filtros.precioMax != null && propiedad.precio != null && propiedad.precio > filtros.precioMax) return false;
     if (filtros.pisoMax != null && propiedad.piso != null && propiedad.piso > filtros.pisoMax) return false;
     if (filtros.administracionMax != null && propiedad.administracion != null && propiedad.administracion > filtros.administracionMax) return false;

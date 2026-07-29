@@ -71,7 +71,7 @@ export function parseEstratoTexto(texto) {
 /** Extrae el número de piso de un texto. */
 export function parsePisoTexto(texto) {
     if (!texto) return null;
-    let match = texto.match(/piso[:\s]+(\d{1,2})\b/i);
+    let match = texto.match(/piso\s*(?:n(?:[úu]mero)?\.?\s*°?)?\s*[:\-]?\s*(\d{1,2})\b/i);
     if (match) return parseInt(match[1], 10);
 
     match = texto.match(/(\d{1,2})\s*(?:er|°|do|to|vo|no)?\s*piso/i);

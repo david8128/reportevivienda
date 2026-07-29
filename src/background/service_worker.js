@@ -23,6 +23,13 @@ const OFFSCREEN_URL = chrome.runtime.getURL('offscreen/offscreen.html');
 let recolectando = false;
 let progreso = { total: 0, procesados: 0, activo: false };
 
+// Campos cuyo extractor ha sido actualizado tras cambiar su archivo en mappings/.
+// Agrega aquí un campo únicamente después de actualizar y probar su extractor.
+const CAMPOS_PATCHABLES = {
+    fincaraiz: new Set(['piso']),
+    metrocuadrado: new Set()
+};
+
 /* ------------------------------------------------------------------ */
 /* Utilidades                                                          */
 /* ------------------------------------------------------------------ */
@@ -227,6 +234,49 @@ async function recalcularTodasLasPuntuaciones() {
     return propiedades.length;
 }
 
+/**
+ * Reprocesa únicamente un campo cuya regla de mapeo/extracción fue corregida.
+ * No recrea los registros ni modifica los demás campos guardados.
+ */
+async function aplicarPatchMapeo(origen, campo) {
+    if (!CAMPOS_PATCHABLES[origen]?.has(campo)) {
+        throw new Error(`El parche ${origen}/${campo} no está registrado.`);
+    }
+
+    const config = await loadConfig();
+    const propiedades = (await obtenerTodasLasPropiedades()).filter((p) => p.origen === origen);
+    let actualizadas = 0;
+    let fallidas = 0;
+
+    for (const propiedad of propiedades) {
+        const resultado = await procesarUrlOffscreen(propiedad.url);
+        if (!resultado?.ok) {
+            fallidas += 1;
+            continue;
+        }
+
+        const camposEstimados = new Set(propiedad.campos_estimados || []);
+        if (resultado.datos.campos_estimados?.includes(campo)) camposEstimados.add(campo);
+        else camposEstimados.delete(campo);
+
+        const actualizado = {
+            ...propiedad,
+            [campo]: resultado.datos[campo] ?? null,
+            campos_estimados: [...camposEstimados]
+        };
+        const puntuacion = recalcularPuntuacionSimple(actualizado, config.pesos, config.filtros);
+        await actualizarPropiedad(propiedad.id, { [campo]: actualizado[campo], campos_estimados: actualizado.campos_estimados, puntuacion });
+        actualizadas += 1;
+
+        // Mantener la actualización deliberadamente suave para no sobrecargar el sitio.
+        await delay(config.rateLimit.delayMs);
+    }
+
+    await actualizarBadgePendientes();
+    broadcast({ type: MSG.PROPIEDAD_GUARDADA, parche: `${origen}/${campo}` });
+    return { total: propiedades.length, actualizadas, fallidas };
+}
+
 /* ------------------------------------------------------------------ */
 /* Listeners                                                           */
 /* ------------------------------------------------------------------ */
@@ -278,6 +328,16 @@ chrome.runtime.onMessage.addListener((mensaje, sender, sendResponse) => {
             case MSG.RECALCULAR_PUNTUACIONES: {
                 const total = await recalcularTodasLasPuntuaciones();
                 sendResponse({ ok: true, total });
+                break;
+            }
+
+            case MSG.APLICAR_PATCH_MAPEO: {
+                try {
+                    const resultado = await aplicarPatchMapeo(mensaje.origen, mensaje.campo);
+                    sendResponse({ ok: true, ...resultado });
+                } catch (e) {
+                    sendResponse({ ok: false, error: e.message });
+                }
                 break;
             }
 
