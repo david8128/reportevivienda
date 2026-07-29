@@ -1,0 +1,108 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: CONJUNTO CERRADO / URBANIZACIÓN CERRADA
+Última revisión: 2026-07-28
+Estado: VERIFICADO - confirmado inspeccionando el DOM en vivo
+Página de referencia: https://www.fincaraiz.com.co/apartamento-en-venta-en-pasadena-bogota/194040739
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Indica si la propiedad hace parte de un conjunto cerrado, urbanización,
+  o unidad residencial con portería/control de acceso.
+  Valores: true (sí hace parte) / false (no hace parte)
+
+------------------------------------------------------------------
+SELECTOR VERIFICADO Y LÓGICA DE DECISIÓN (fuente principal):
+------------------------------------------------------------------
+Contenedor real de la descripción: `.ant-typography.property-description`
+(dentro de `.description-container`).
+
+  → XPath verificado:
+    /html/body/div[2]/div/div/div/div[2]/div[2]/div[1]/div[4]/div/div
+  → CSS verificado:
+    .property-description
+    .description-container .ant-typography.property-description
+
+LÓGICA DE DECISIÓN (aplicar en este orden sobre el texto de la descripción):
+  1. Buscar la palabra "edificio" (case-insensitive) en la descripción.
+     → Si aparece → conjunto = true (el apartamento pertenece a un edificio).
+  2. Si NO aparece "edificio", buscar "conjunto cerrado" o "conjunto".
+     → Si aparece cualquiera de las dos → conjunto = true.
+  3. Si NINGUNA de las anteriores aparece → el dato es ambiguo:
+     → Preguntar al usuario mediante un popup de confirmación
+       (no asumir true/false automáticamente).
+
+  EJEMPLO REAL VERIFICADO (194040739):
+    Texto relevante encontrado: "...y el edificio cuenta con ascensor y
+    TERRAZA con BBQ..."
+    → Contiene "edificio" → conjunto = true (sin necesidad de popup).
+    (Nota: en esta ficha NO aparecen las frases "conjunto cerrado" ni
+    "conjunto" sueltas, solo "edificio"; confirma que el paso 1 es el que
+    resuelve el caso más común).
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (fallback genérico, no confirmados en esta ficha):
+------------------------------------------------------------------
+[1] [class*="conjunto"], [class*="complex"]
+[2] [data-feature="conjunto-cerrado"]
+[3] li:has(span:contains("Conjunto")) strong
+[4] .amenidades .conjunto-cerrado
+[5] .caracteristicas [class*="conjunto"]
+[6] .property-amenities [class*="gated"]
+[7] [data-testid="gated-community"]
+[8] .icono-conjunto ~ span, .icon-conjunto ~ span
+[9] .tag-conjunto-cerrado
+[10] [class*="urbanizacion"]
+
+------------------------------------------------------------------
+INDICADORES POSITIVOS (texto que indica SÍ es conjunto cerrado):
+------------------------------------------------------------------
+  - "Conjunto cerrado"
+  - "Conjunto residencial"
+  - "Urbanización"
+  - "Unidad residencial"
+  - "Portería"
+  - "Vigilancia 24h", "Vigilancia 24 horas"
+  - "Control de acceso"
+  - "Conjunto" (sólo si aparece como característica, no en la descripción general)
+  - "Edificio" (implica conjunto para apartamentos)
+  - "Torre" (implica conjunto para apartamentos)
+  - Nombre propio de conjunto entre comillas o mayúsculas (ej. "Conjunto Los Alpes")
+
+INDICADORES NEGATIVOS (texto que indica NO es conjunto cerrado):
+  - "Casa independiente"
+  - "Casa lote"
+  - "No tiene conjunto"
+  - "No pertenece a conjunto"
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO (aplicar sobre .property-description):
+------------------------------------------------------------------
+Patrón Positivo 1 (PRIORIDAD 1): \bedificio\b
+Patrón Positivo 2 (PRIORIDAD 2): conjunto\s+cerrado
+Patrón Positivo 3 (PRIORIDAD 2): \bconjunto\b
+Patrón Positivo 4 (indicios adicionales, no decisivos por sí solos):
+  conjunto\s+residencial|urbanizaci[oó]n\s+(?:cerrada)?|porter[ií]a|vigilancia\s+24|unidad\s+residencial
+Patrón Negativo 1: casa\s+independiente
+Patrón Negativo 2: no\s+(?:tiene|pertenece)\s+(?:a\s+)?conjunto
+
+------------------------------------------------------------------
+LÓGICA DE DECISIÓN (VERIFICADA - basada en .property-description):
+------------------------------------------------------------------
+  1. Extraer texto de `.property-description` (ver selector verificado arriba).
+  2. Si el texto contiene "edificio" (case-insensitive) → conjunto = true.
+  3. Si no, si el texto contiene "conjunto cerrado" o "conjunto" → conjunto = true.
+  4. Si no aparece ninguna de las anteriores → dato ambiguo:
+     preguntar al usuario con un popup de confirmación (no asumir false).
+  5. (Fallback opcional) Si el popup no está disponible o el usuario no
+     responde → campo = "estimado - requiere confirmación" (null).
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Fuente principal verificada: descripción libre en `.property-description`,
+  NO un campo estructurado/booleano separado en el DOM de FincaRaiz.
+- Orden de prioridad confirmado con ejemplo real: "edificio" > "conjunto cerrado"/"conjunto".
+- Si ninguna palabra clave aparece → mostrar popup al usuario en vez de
+  asumir un valor por defecto.
+- El conjunto cerrado es un punto positivo en el sistema de puntuación (+10 pts)

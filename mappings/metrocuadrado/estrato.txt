@@ -1,0 +1,51 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: ESTRATO SOCIOECONÓMICO
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES CSS PRIMARIOS:
+------------------------------------------------------------------
+[1] [class*="Stratum"], [class*="stratum"], [class*="estrato"]
+[2] [data-testid="stratum"], [data-testid="estrato"]
+[3] li:has([class*="label"]:contains("Estrato")) [class*="value"]
+[4] .property-stratum
+[5] [class*="StratumValue"]
+
+EXTRACCIÓN DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.stratum
+  nextData.props.pageProps.listing.stratum
+  nextData.props.pageProps.result.attributes.stratum
+
+XPATH:
+------------------------------------------------------------------
+  //span[contains(text(),'Estrato')]/following-sibling::span
+  //dt[contains(text(),'Estrato')]/following-sibling::dd[1]
+
+REGEX PARA TEXTO:
+------------------------------------------------------------------
+  Patrón 1: [Ee]strato[:\s]+(\d)
+  Patrón 2: \bestrato\s*([1-6])\b
+  Patrón 3: [Ee]strato\s+(uno|dos|tres|cuatro|cinco|seis)
+
+NORMALIZACIÓN TEXTO A NÚMERO:
+  "uno" → 1, "dos" → 2, "tres" → 3
+  "cuatro" → 4, "cinco" → 5, "seis" → 6
+
+VALORES Y FILTROS:
+------------------------------------------------------------------
+  Estrato 1-4 → INCLUIR en resultados (cumple filtro preferido)
+  Estrato 5-6 → EXCLUIR (no cumple filtro ≤ 4)
+  Estrato 3   → ÓPTIMO para arriendo (+5 puntos extra)
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - __NEXT_DATA__ puede devolver estrato como número directo (más confiable)
+  - MetroCuadrado puede omitir el estrato para propiedades campestres
+
+NOTAS:
+------------------------------------------------------------------
+- Si se extrae de descripción → "estimado - requiere confirmación"
+- Si null → pendiente de confirmación
+- Rango válido: 1-6

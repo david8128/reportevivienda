@@ -1,0 +1,111 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: ASCENSOR (Elevador en el edificio)
+Última revisión: 2026-07-28
+Estado: VERIFICADO - confirmado inspeccionando el DOM en vivo
+Página de referencia: https://www.fincaraiz.com.co/apartamento-en-venta-en-pasadena-bogota/194040739
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Indica si el edificio tiene ascensor/elevador.
+  Valores: true (tiene ascensor) / false (no tiene)
+  Muy relevante cuando el piso es > 2.
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (VERIFICADOS):
+------------------------------------------------------------------
+[1] .property-facilities .CO-facility-batch  (badges de amenidades/facilidades)
+      → Cada amenidad es un badge independiente: "• <span>Nombre</span>"
+      → "Ascensor" aparece como uno de los badges SI Y SOLO SI el edificio lo tiene
+      → Si no está en la lista → no tiene ascensor (o no fue reportado)
+[2] [class*="ascensor"], [class*="elevator"], [class*="lift"]  (fallback genérico, no confirmado)
+[3] li:has(span:contains("Ascensor")) strong  (fallback genérico, no confirmado)
+
+------------------------------------------------------------------
+ESTRUCTURA REAL VERIFICADA (194040739):
+------------------------------------------------------------------
+El contenedor `.property-facilities` (ant-row) agrupa hasta 12 badges de
+amenidades, cada uno un `.CO-facility-batch` (ant-space) con un bullet "•"
+y un <span class="ant-typography"> con el nombre de la amenidad. No hay
+booleano explícito verdadero/falso: la PRESENCIA del badge = tiene la amenidad.
+
+  Amenidades reales encontradas en esta ficha (incluye "Ascensor"):
+    Ascensor, Baño Auxiliar, Baño Independiente, Calentador,
+    Cerca de Zona Urbana, Circuito cerrado de TV, Estudio,
+    Hall de Alcobas, Parqueadero Visitantes, Parques cercanos,
+    Portería / Recepción, Supermercados / C.Comerciales
+
+  → XPath (verificado, resuelve al badge completo si existe "Ascensor"):
+    //div[contains(@class,'property-facilities')]//div[contains(@class,'CO-facility-batch')][.//span[normalize-space(text())='Ascensor']]
+
+  → XPath (ejemplo original inspeccionado, solo el <span> de texto):
+    /html/body/div[2]/div/div/div/div[2]/div[2]/div[1]/div[3]/div/div/div/div/div[1]/div[1]/div/div[2]/span
+    (equivale a .property-facilities .CO-facility-batch span.ant-typography;
+    NOTA: los índices numéricos pueden variar según el orden/cantidad de
+    amenidades listadas, preferir el XPath robusto de arriba)
+
+  → CSS (lógica de presencia, pseudocódigo):
+    existe = Array.from(document.querySelectorAll('.property-facilities .CO-facility-batch'))
+              .some(el => el.textContent.trim().replace('•','').trim() === 'Ascensor')
+
+  HTML real del badge:
+    <div class="ant-space ant-space-horizontal ant-space-align-center CO-facility-batch">
+      <div class="ant-space-item" style="margin-right: 5px;">
+        <span class="ant-typography ant-typography-secondary small">•</span>
+      </div>
+      <div class="ant-space-item">
+        <span class="ant-typography">Ascensor</span>
+      </div>
+    </div>
+
+------------------------------------------------------------------
+SELECTORES DE ÍCONOS (no aplica en esta ficha - fallback genérico):
+------------------------------------------------------------------
+  No se encontraron íconos SVG/FontAwesome para amenidades en esta ficha;
+  el sistema real usa solo texto en badges (.CO-facility-batch). Se
+  mantienen como fallback por si otras plantillas de FincaRaiz los usan:
+  - [class*="icon-elevator"]
+  - [class*="fa-elevator"] (FontAwesome)
+  - img[alt*="ascensor"], img[alt*="elevator"]
+  - svg[aria-label*="ascensor"]
+
+  Si el ícono tiene clase "activo" o "incluido" → true
+  Si el ícono tiene clase "inactivo" o "no-incluido" → false
+
+------------------------------------------------------------------
+INDICADORES POSITIVOS (texto):
+------------------------------------------------------------------
+  - "Ascensor"
+  - "Elevador"
+  - "Con ascensor"
+  - "Ascensor(es)"
+  - "1 ascensor", "2 ascensores"
+
+INDICADORES NEGATIVOS:
+  - "Sin ascensor"
+  - "No tiene ascensor"
+  - "Sin elevador"
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: \bascensor\b
+Patrón 2: \belevador\b
+Patrón 3: ascensor[:\s]+(sí|si|no)
+Patrón 4: (\d+)\s*ascensor
+
+------------------------------------------------------------------
+LÓGICA DE DECISIÓN ESPECIAL:
+------------------------------------------------------------------
+  - Si la propiedad es una CASA → ascensor = false (asumir, marcar como estimado)
+  - Si el piso es 1 o 2 → ascensor puede ser false sin penalización
+  - Si el piso es > 2 y no hay información de ascensor → "estimado - requiere confirmación"
+  - Si el piso es > 5 y no hay ascensor → marcar como observación importante
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- El ascensor suma +5 puntos en el sistema de puntuación
+- Si el tipo es "casa independiente" → no buscar este campo (dejar false por defecto)
+- Si aparece en lista de amenidades sin valor explícito → asumir que sí tiene (true, estimado)
+- Si se extrae de descripción → campo = "estimado - requiere confirmación"

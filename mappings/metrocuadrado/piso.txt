@@ -1,0 +1,46 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: PISO
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES CSS PRIMARIOS:
+------------------------------------------------------------------
+[1] [class*="Floor"], [class*="floor"], [class*="piso"]
+[2] [data-testid="floor"], [data-testid="piso"]
+[3] li:has([class*="label"]:contains("Piso")) [class*="value"]
+[4] .property-floor
+[5] [class*="FloorNumber"]
+
+EXTRACCIÓN DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.floor
+  nextData.props.pageProps.property.floorNumber
+  nextData.props.pageProps.result.attributes.floor
+
+REGEX PARA TEXTO:
+------------------------------------------------------------------
+  Patrón 1: [Pp]iso[:\s]+(\d{1,3})
+  Patrón 2: \bpiso\s+(\d{1,2})\b
+  Patrón 3: (\d{1,2})(?:er|°|do|to)?\s*piso
+
+NORMALIZACIÓN:
+------------------------------------------------------------------
+  "primero/primer" → 1
+  "segundo"        → 2
+  "tercero/tercer" → 3
+  "PH" / "penthouse" → alto (estimado, preguntar)
+  "semisótano"     → 0
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado devuelve el piso como número entero en __NEXT_DATA__
+  - Muy confiable cuando viene de API
+  - Puede usar "Piso 0" para primer piso (planta baja) en algunos casos
+
+NOTAS:
+------------------------------------------------------------------
+- Rango razonable: 1-50
+- Si se extrae de descripción → "estimado - requiere confirmación"
+- Piso ≤ 2 suma +10 pts en el sistema de puntuación
+- IMPORTANTE: Verificar si "piso 1" es planta baja (piso 0 en algunos edificios)

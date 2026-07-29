@@ -1,0 +1,68 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: VALOR DE LA PROPIEDAD (Precio de venta)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Precio de venta en pesos colombianos (COP).
+  Puede aparecer como "$350.000.000", "$ 350,000,000", "350 millones", etc.
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] .precio-inmueble, .price-listing
+[2] [class*="precio"] [class*="valor"], [class*="price"] [class*="value"]
+[3] .ficha-inmueble__precio span
+[4] h2.precio, h3.precio
+[5] .listing-price, .property-price
+[6] [data-testid="price"], [data-id="price"]
+[7] .detalle-precio .monto
+[8] span[class*="Price"], div[class*="Price"]
+[9] .valor-total-inmueble
+[10] .precio-venta strong
+
+------------------------------------------------------------------
+SELECTORES CSS SECUNDARIOS:
+------------------------------------------------------------------
+[11] .resumen-precio
+[12] meta[property="product:price:amount"] → atributo "content"
+[13] script[type="application/ld+json"] → JSON-LD "price"
+
+------------------------------------------------------------------
+XPATH:
+------------------------------------------------------------------
+//*[contains(@class,'precio') and contains(@class,'principal')]
+//span[contains(@class,'Price')]
+//*[@itemprop='price']/@content
+//h2[contains(@class,'price')]
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1:  \$\s*([\d.,]+)   → captura el número después de $
+Patrón 2:  ([\d.,]+)\s*(?:millones?|mill)  → "350 millones"
+Patrón 3:  Precio[:\s]+\$?\s*([\d.,]+)
+Patrón 4:  (?:venta|valor)[:\s]+\$?\s*([\d.,]+)
+
+NORMALIZACIÓN:
+  - Remover puntos de miles y convertir a número: "350.000.000" → 350000000
+  - Si termina en "millones" o "mill" → multiplicar por 1.000.000
+  - Si termina en "mil" → multiplicar por 1.000
+  - Moneda esperada: COP (pesos colombianos)
+
+------------------------------------------------------------------
+DATOS ADICIONALES A EXTRAER EN LA MISMA SECCIÓN:
+------------------------------------------------------------------
+- Precio por m² (si está disponible): calcular como precio / metros_cuadrados
+- Precio anterior (si hay descuento marcado): buscar texto tachado (.tachado, s, del)
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Rango razonable: 50.000.000 - 5.000.000.000 COP (fuera → marcar estimado)
+- Puede haber precio de arriendo además del de venta → capturar ambos si existen
+- Buscar en JSON-LD como alternativa más confiable:
+  document.querySelector('script[type="application/ld+json"]')
+- Si no se encuentra precio → marcar campo como "no disponible"

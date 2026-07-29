@@ -1,0 +1,75 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: UBICACIÓN (Dirección, Barrio, Ciudad)
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES CSS PRIMARIOS:
+------------------------------------------------------------------
+[1] [class*="Location"], [class*="location"], [class*="ubicacion"]
+[2] [data-testid="location"], [data-testid="address"]
+[3] .property-location, .listing-location
+[4] .breadcrumb (ciudad → sector → barrio)
+[5] [class*="PropertyAddress"], [class*="AddressText"]
+[6] h2[class*="location"], .subtitle-location
+[7] [class*="CityName"], [class*="Neighborhood"]
+[8] address, [itemtype*="PostalAddress"]
+[9] [class*="LocationText"]
+[10] .detalle-ubicacion
+
+EXTRACCIÓN DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.location
+  nextData.props.pageProps.property.address
+  nextData.props.pageProps.listing.address
+  // Objetos comunes:
+  {
+    address: "Cra 15 #85-20",
+    neighborhood: "Rosales",
+    city: "Bogotá",
+    state: "Cundinamarca",
+    lat: 4.6685,
+    lng: -74.0560
+  }
+
+EXTRACCIÓN DE COORDENADAS DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.latitude
+  nextData.props.pageProps.property.longitude
+  nextData.props.pageProps.property.coordinates.lat
+  nextData.props.pageProps.property.coordinates.lng
+  nextData.props.pageProps.property.location.coordinates
+
+SELECTORES DEL MAPA:
+------------------------------------------------------------------
+[1] .leaflet-container (Leaflet - usado frecuentemente en MetroCuadrado)
+[2] [class*="MapContainer"], [class*="map-container"]
+[3] [data-testid="property-map"]
+[4] .mapboxgl-canvas
+[5] div[class*="Map"]:not([class*="sitemap"])
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado usa Leaflet.js frecuentemente para el mapa
+  - Coordenadas suelen estar en __NEXT_DATA__ (muy confiable)
+  - La dirección puede estar parcialmente oculta (mostrar solo sector)
+  - Breadcrumb: "MetroCuadrado > Bogotá > Chapinero > Apartamentos"
+
+REGEX PARA TEXTO:
+------------------------------------------------------------------
+  Ciudad: (Bogotá|Medellín|Cali|Barranquilla|Bucaramanga|Pereira|Cartagena)
+  Barrio: barrio\s+([A-ZÁ-Ú][A-Za-záéíóúñ\s]{3,30})
+  Dirección: (Cra|Calle|Cl|Diagonal|Av)\.?\s*\d+[A-Z]?\s*[#\-]\s*\d+
+
+CAPTURA DEL MAPA (Leaflet):
+------------------------------------------------------------------
+  // Leaflet expone el mapa en window._leaflet_id o document._leafletMaps
+  const mapInstance = Object.values(window).find(v => v?._leaflet_id);
+  const center = mapInstance?.getCenter();  // { lat, lng }
+  // Captura de imagen: igual que FincaRaiz usando getBoundingClientRect + captureVisibleTab
+
+NOTAS:
+------------------------------------------------------------------
+- __NEXT_DATA__ con coordenadas es el método más confiable para MetroCuadrado
+- Usar coordenadas para Google Static Maps en scraping headless
+- Guardar objeto completo: { direccion, barrio, localidad, ciudad, lat, lng }

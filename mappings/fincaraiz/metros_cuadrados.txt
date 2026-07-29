@@ -1,0 +1,57 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: METROS CUADRADOS (Área construida / total)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Área en metros cuadrados de la propiedad (construidos y/o privados).
+  Puede aparecer como "65 m²", "65m²", "Área: 65 m²", etc.
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] .ficha-inmueble__caracteristicas .metros-cuadrados
+[2] [data-id="area"] .value
+[3] .property-features [class*="area"] span
+[4] li[class*="area"] strong
+[5] .caracteristicas-inmueble span:contains("m²")  (jQuery-style)
+[6] .listing-detail__feature[data-feature="area"] .feature-value
+[7] .ficha-detalle__area
+[8] span[class*="squareMeter"], span[class*="square-meter"]
+[9] [class*="areaTotal"] [class*="value"]
+[10] .chip-caracteristica:nth-child(1) span
+
+------------------------------------------------------------------
+SELECTORES CSS SECUNDARIOS / ALTERNATIVOS:
+------------------------------------------------------------------
+[11] .detalle-inmueble .area-construida
+[12] table.caracteristicas td:nth-child(2)
+[13] .resumen-inmueble li:first-child
+
+------------------------------------------------------------------
+XPATH:
+------------------------------------------------------------------
+//li[contains(@class,'area')]//span[@class='value']
+//div[contains(text(),'m²')]/following-sibling::span
+//span[contains(text(),'Área construida')]/following-sibling::*
+//*[@data-testid='area-value']
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO (aplicar al texto visible de la página):
+------------------------------------------------------------------
+Patrón 1:  (\d{1,4})\s*m²
+Patrón 2:  Área[:\s]+(\d{1,4})\s*(?:m²|metros)
+Patrón 3:  (\d{1,4})\s*metros\s*cuadrados?
+Patrón 4:  área\s*(?:construida|privada|total)?[:\s]+(\d{1,4})
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Puede haber dos valores: "área construida" y "área privada" → usar construida primero
+- Los valores suelen ser enteros; si aparece decimal, redondear
+- Rango esperado: 20 - 500 m² (fuera de rango → marcar como estimado)
+- Si solo se encuentra en la descripción → campo = "estimado - requiere confirmación"
+- Unidad esperada: m² (metros cuadrados)
+- Sitio puede usar React/Vue → esperar a que el DOM esté hidratado

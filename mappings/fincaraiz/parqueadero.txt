@@ -1,0 +1,63 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: PARQUEADERO (Estacionamiento incluido)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Indica si la propiedad incluye parqueadero / garaje / estacionamiento.
+  Valores: true (tiene parqueadero) / false (no tiene) / número de puestos
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] [class*="parqueadero"], [class*="parking"], [class*="garaje"]
+[2] [data-feature="parqueadero"], [data-id="parking"]
+[3] li:has(span:contains("Parqueadero")) strong
+[4] li:has(span:contains("Garaje")) strong
+[5] .amenidades .parqueadero, .amenidades .parking
+[6] .caracteristicas [class*="garage"]
+[7] [data-testid="parking"]
+[8] .icono-parqueadero ~ span
+[9] .tag-parqueadero
+[10] .property-parking
+
+------------------------------------------------------------------
+INDICADORES POSITIVOS (texto que indica SÍ tiene parqueadero):
+------------------------------------------------------------------
+  - "Parqueadero" (como característica)
+  - "Garaje"
+  - "1 parqueadero", "2 parqueaderos", "un garaje"
+  - "Cubierto" (puede referirse a parqueadero cubierto)
+  - "Parqueadero cubierto"
+  - "Parqueadero descubierto"
+  - "Parqueadero opcional" → marcar como "estimado" (puede tener costo extra)
+
+INDICADORES NEGATIVOS:
+  - "Sin parqueadero"
+  - "No incluye parqueadero"
+  - "0 parqueaderos"
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: (\d+)\s*parqueadero
+Patrón 2: parqueadero[s]?:?\s*(\d+|sí|si|no)
+Patrón 3: \bgaraje\b|\bgarage\b
+Patrón 4: (\d+)\s*(?:puesto|plaza)\s*de\s*(?:parqueo|parking|estacionamiento)
+
+EXTRACCIÓN DE CANTIDAD:
+  - Número explícito → guardar número (ej. 2 parqueaderos → 2)
+  - Solo mención sin número → asumir 1
+  - "doble garaje" → 2
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Puede aparecer en la lista de características como ícono con texto
+- Puede aparecer como número: "Parqueaderos: 1"
+- Si dice "parqueadero opcional" → guardar como true pero con nota "opcional (costo extra)"
+- Si se extrae de descripción → campo = "estimado - requiere confirmación"
+- Rango razonable: 0-4 puestos de parqueadero
+- Parqueadero suma +10 puntos en el sistema de puntuación

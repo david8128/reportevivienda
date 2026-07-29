@@ -1,0 +1,42 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: ASCENSOR
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES CSS PRIMARIOS:
+------------------------------------------------------------------
+[1] [class*="Elevator"], [class*="elevator"], [class*="ascensor"]
+[2] [data-testid="elevator"], [data-testid="ascensor"]
+[3] .amenity-item:contains("Ascensor")
+[4] .building-features [class*="elevator"]
+[5] [class*="Amenity"]:contains("Ascensor")
+
+EXTRACCIÓN DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.hasElevator  (booleano)
+  nextData.props.pageProps.property.elevator
+  nextData.props.pageProps.result.attributes.elevator
+
+REGEX PARA TEXTO:
+------------------------------------------------------------------
+  Patrón 1: \bascensor\b
+  Patrón 2: \belevador\b
+  Patrón 3: (\d+)\s*ascensor[es]?
+
+LÓGICA ESPECIAL:
+------------------------------------------------------------------
+  - Casa → false por defecto (no buscar ascensor)
+  - Piso > 3 + sin info → "estimado - requiere confirmación"
+  - En lista de amenidades sin valor → asumir true (estimado)
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado tiende a mostrar lista de amenidades con checkboxes
+  - Si el checkbox de "Ascensor" está marcado → true con confianza
+  - __NEXT_DATA__ con booleano es la fuente más confiable
+
+NOTAS:
+------------------------------------------------------------------
+- Ascensor suma +5 pts en el sistema de puntuación
+- Relevante cuando piso > 2

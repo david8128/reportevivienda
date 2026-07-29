@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ReporteVivienda - Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+    <header class="rv-topbar">
+        <img src="../icons/icon48.png" width="28" height="28" alt="">
+        <h1>ReporteVivienda</h1>
+        <div class="rv-topbar-acciones">
+            <button id="btn-recolectar" class="btn btn-primario">📥 Recopilar desde historial</button>
+            <button id="btn-pdf" class="btn btn-exito">📄 Generar Reporte PDF</button>
+        </div>
+    </header>
+
+    <nav class="rv-tabs">
+        <button class="rv-tab activa" data-tab="propiedades">Propiedades</button>
+        <button class="rv-tab" data-tab="filtros">Filtros</button>
+        <button class="rv-tab" data-tab="puntuacion">Puntuación</button>
+        <button class="rv-tab" data-tab="pendientes">Pendientes de confirmación</button>
+        <button class="rv-tab" data-tab="historial">Historial</button>
+        <button class="rv-tab" data-tab="datos">Datos (Import/Export)</button>
+    </nav>
+
+    <main>
+        <section id="tab-propiedades" class="rv-panel-tab activa">
+            <div class="rv-toolbar">
+                <span id="contador-resultados">0 propiedades</span>
+                <label>Reporte:
+                    <select id="select-top-n">
+                        <option value="">Todas las filtradas</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                        <option value="50">Top 50</option>
+                    </select>
+                </label>
+            </div>
+            <table class="rv-tabla" id="tabla-propiedades">
+                <thead>
+                    <tr>
+                        <th>Puntuación</th>
+                        <th>Tipo</th>
+                        <th>Precio</th>
+                        <th>M²</th>
+                        <th>Estrato</th>
+                        <th>Piso</th>
+                        <th>Admin.</th>
+                        <th>Parq.</th>
+                        <th>Asc.</th>
+                        <th>Conj.</th>
+                        <th>Ubicación</th>
+                        <th>Origen</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-propiedades-body"></tbody>
+            </table>
+        </section>
+
+        <section id="tab-filtros" class="rv-panel-tab">
+            <div class="rv-tarjeta">
+                <h2>Filtros de búsqueda</h2>
+                <label class="rv-campo-filtro">
+                    Estrato máximo: <span id="valor-estrato-max">4</span>
+                    <input type="range" id="filtro-estrato-max" min="1" max="6" value="4">
+                </label>
+                <label class="rv-campo-filtro">
+                    Valor máximo de la propiedad (COP)
+                    <input type="number" id="filtro-precio-max" step="1000000" value="550000000">
+                </label>
+                <label class="rv-campo-filtro">
+                    Piso máximo
+                    <select id="filtro-piso-max">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="99">Sin límite</option>
+                    </select>
+                </label>
+                <label class="rv-campo-filtro">
+                    Administración máxima (COP)
+                    <input type="number" id="filtro-admin-max" step="10000" value="300000">
+                </label>
+                <label class="rv-checkbox"><input type="checkbox" id="filtro-parqueadero"> Solo con parqueadero</label>
+                <label class="rv-checkbox"><input type="checkbox" id="filtro-ascensor"> Solo con ascensor</label>
+                <label class="rv-checkbox"><input type="checkbox" id="filtro-conjunto"> Solo en conjunto cerrado</label>
+                <button id="btn-guardar-filtros" class="btn btn-primario">Guardar filtros</button>
+            </div>
+        </section>
+
+        <section id="tab-puntuacion" class="rv-panel-tab">
+            <div class="rv-tarjeta">
+                <h2>Pesos del sistema de puntuación</h2>
+                <div id="pesos-contenedor"></div>
+                <div class="rv-acciones-fila">
+                    <button id="btn-guardar-pesos" class="btn btn-primario">Guardar y recalcular</button>
+                    <button id="btn-restablecer" class="btn btn-peligro">Restablecer valores predeterminados</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-pendientes" class="rv-panel-tab">
+            <div class="rv-tarjeta">
+                <h2>Propiedades pendientes de confirmación</h2>
+                <button id="btn-confirmar-todos-nose" class="btn btn-secundario">Confirmar todos como "No sé"</button>
+                <div id="lista-pendientes"></div>
+            </div>
+        </section>
+
+        <section id="tab-historial" class="rv-panel-tab">
+            <div class="rv-tarjeta">
+                <h2>Historial de confirmaciones y cambios de precio</h2>
+                <div id="lista-historial"></div>
+            </div>
+        </section>
+
+        <section id="tab-datos" class="rv-panel-tab">
+            <div class="rv-tarjeta">
+                <h2>Exportar / Importar</h2>
+                <div class="rv-acciones-fila">
+                    <button id="btn-exportar-db" class="btn btn-secundario">Exportar base de datos (JSON)</button>
+                    <button id="btn-exportar-config" class="btn btn-secundario">Exportar configuración</button>
+                </div>
+                <div class="rv-acciones-fila">
+                    <label class="btn btn-secundario rv-file-label">Importar base de datos
+                        <input type="file" id="input-importar-db" accept="application/json" hidden>
+                    </label>
+                    <label class="btn btn-secundario rv-file-label">Importar configuración
+                        <input type="file" id="input-importar-config" accept="application/json" hidden>
+                    </label>
+                </div>
+                <h2>Limpieza de registros antiguos</h2>
+                <button id="btn-limpiar-antiguos" class="btn btn-peligro">Limpiar registros antiguos (180+
+                    días)</button>
+                <div id="lista-limpieza"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="modal-confirmacion" class="rv-modal oculto">
+        <div class="rv-modal-contenido">
+            <h3>Confirmar datos estimados</h3>
+            <div id="modal-campos"></div>
+            <div class="rv-acciones-fila">
+                <button id="btn-modal-guardar" class="btn btn-primario">Guardar</button>
+                <button id="btn-modal-cerrar" class="btn btn-secundario">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rv-toast" class="rv-toast oculto"></div>
+
+    <script src="../libs/jspdf.umd.min.js"></script>
+    <script src="dashboard.js" type="module"></script>
+</body>
+
+</html>

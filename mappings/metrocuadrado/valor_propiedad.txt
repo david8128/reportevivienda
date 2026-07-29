@@ -1,0 +1,79 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: VALOR DE LA PROPIEDAD (Precio de venta)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Precio de venta en pesos colombianos (COP).
+  MetroCuadrado.com es parte del Grupo El Tiempo y usa React/Next.js.
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] [class*="Price"], [class*="price"]
+[2] .property-price, .listing-price
+[3] [data-testid="price"], [data-testid="listing-price"]
+[4] h2[class*="price"], h3[class*="price"]
+[5] .sc-price, .detail-price
+[6] [class*="PriceValue"], [class*="priceValue"]
+[7] .precio-principal, .main-price
+[8] [aria-label*="precio"], [aria-label*="price"]
+[9] .valor-inmueble strong
+[10] [class*="PropertyPrice"]
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE WINDOW.__NEXT_DATA__ (método preferido):
+------------------------------------------------------------------
+  const nextData = JSON.parse(
+    document.getElementById('__NEXT_DATA__').textContent
+  );
+  // Rutas comunes en MetroCuadrado:
+  nextData.props.pageProps.property.price
+  nextData.props.pageProps.property.salePrice
+  nextData.props.pageProps.listing.price
+  nextData.props.pageProps.result.price
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE META TAGS:
+------------------------------------------------------------------
+  <meta property="product:price:amount" content="350000000">
+  <meta property="og:price:amount" content="350000000">
+  document.querySelector('meta[property="product:price:amount"]')?.content
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE JSON-LD:
+------------------------------------------------------------------
+  <script type="application/ld+json">
+  Buscar: "offers" → "price" o "priceSpecification" → "price"
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: \$\s*([\d.,']+)
+Patrón 2: ([\d.,']+)\s*(?:millones?|mill\.)
+Patrón 3: [Pp]recio[:\s]+\$?\s*([\d.,']+)
+Patrón 4: [Vv]alor[:\s]+\$?\s*([\d.,']+)
+
+NORMALIZACIÓN:
+  - "350.000.000" → 350000000 (remover puntos de miles)
+  - "350,000,000" → 350000000 (remover comas de miles)
+  - "350 millones" → 350000000
+  - "350 mill."    → 350000000
+
+------------------------------------------------------------------
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado puede mostrar precio en formato "$ 350.000.000" con espacio
+  - Puede separar "precio de lista" vs "precio final"
+  - Puede mostrar precio en dólares (USD) para propiedades premium → convertir
+  - __NEXT_DATA__ es más confiable que selectores CSS en este sitio
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Intentar siempre __NEXT_DATA__ primero
+- Luego meta tags, luego JSON-LD, luego CSS selectores, luego regex de texto
+- Rango razonable: 50M - 5.000M COP
+- Si fuera del rango → marcar como "estimado - requiere confirmación"

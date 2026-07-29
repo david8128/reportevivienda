@@ -1,0 +1,80 @@
+{
+    "manifest_version": 3,
+    "name": "ReporteVivienda - FincaRaiz & MetroCuadrado",
+    "short_name": "ReporteVivienda",
+    "description": "Recopila, analiza y puntúa propiedades de FincaRaiz y MetroCuadrado para generar reportes PDF con las mejores opciones de inversión.",
+    "version": "1.0.0",
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        },
+        "default_title": "ReporteVivienda"
+    },
+    "background": {
+        "service_worker": "background/service_worker.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*.fincaraiz.com/*",
+                "*://*.fincaraiz.com.co/*",
+                "*://*.metrocuadrado.com/*"
+            ],
+            "js": [
+                "content/content_script.js"
+            ],
+            "css": [
+                "content/content.css"
+            ],
+            "run_at": "document_idle",
+            "all_frames": false
+        }
+    ],
+    "options_ui": {
+        "page": "dashboard/dashboard.html",
+        "open_in_tab": true
+    },
+    "permissions": [
+        "storage",
+        "history",
+        "tabs",
+        "activeTab",
+        "scripting",
+        "alarms",
+        "notifications",
+        "offscreen"
+    ],
+    "host_permissions": [
+        "*://*.fincaraiz.com/*",
+        "*://*.fincaraiz.com.co/*",
+        "*://*.metrocuadrado.com/*",
+        "https://maps.googleapis.com/*",
+        "https://staticmap.openstreetmap.de/*",
+        "https://tile.openstreetmap.org/*"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "libs/*",
+                "icons/*",
+                "shared/*",
+                "shared/extractors/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
+    }
+}

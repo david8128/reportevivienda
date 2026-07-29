@@ -1,0 +1,64 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: TIPO DE INMUEBLE (Casa / Apartamento / Otro)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Clasificación del inmueble. Valores esperados: "apartamento", "casa",
+  "casa campestre", "penthouse", "loft", "studio", etc.
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] .ficha-inmueble__tipo, .property-type
+[2] [class*="tipoInmueble"], [class*="propertyType"]
+[3] .breadcrumb a:last-child  (el breadcrumb suele indicar el tipo)
+[4] .breadcrumb li:nth-child(2) span
+[5] h1.titulo-inmueble  (el título suele iniciar con "Apartamento en...")
+[6] [data-testid="property-type"]
+[7] .caracteristicas-principales [class*="tipo"]
+[8] meta[name="og:title"] → atributo "content" (contiene tipo en el título)
+[9] .tag-tipo-inmueble
+[10] .etiqueta-tipo
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE URL:
+------------------------------------------------------------------
+Patrón URL fincaraiz: /venta/apartamento/, /venta/casa/, /venta/casa-campestre/
+Regex: /(?:venta|arriendo)\/([^/]+)\/
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE TÍTULO DE PÁGINA:
+------------------------------------------------------------------
+Regex: ^(Apartamento|Casa|Penthouse|Loft|Studio|Local|Oficina|Finca)\s+(?:en|para)
+Normalización:
+  "apartamento" → "apartamento"
+  "casa"        → "casa"
+  "penthouse"   → "apartamento" (subtipo)
+  "loft"        → "apartamento" (subtipo)
+  "studio"      → "apartamento" (subtipo)
+  "casa campestre" → "casa" (subtipo campo)
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE JSON-LD:
+------------------------------------------------------------------
+  document.querySelector('script[type="application/ld+json"]')
+  → campo "@type": "Apartment" | "House" | "SingleFamilyResidence"
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: ^(Apartamento|Casa)\s+en\s+venta
+Patrón 2: tipo[:\s]+(casa|apartamento|penthouse)
+Patrón 3: (?:se vende|venta de)\s+(casa|apartamento)
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Normalizar siempre a minúsculas
+- El tipo desde el breadcrumb o URL es el más confiable
+- Si el tipo no está disponible → extraer del título H1 con regex
+- Si no se puede determinar → campo = "estimado - requiere confirmación"
+- Para el reporte: mostrar únicamente "Casa" o "Apartamento"

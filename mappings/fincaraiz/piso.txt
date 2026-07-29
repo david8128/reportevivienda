@@ -1,0 +1,78 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: PISO (Número de piso del apartamento)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Número de piso en el que se encuentra el apartamento dentro del edificio.
+  Para casas → puede ser "1" o null.
+  Filtro relevante: piso < 3 (piso 1 o 2 preferido).
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] [class*="piso"], [class*="floor"]
+[2] [data-feature="piso"], [data-id="floor"]
+[3] li:has(span:contains("Piso")) strong
+[4] li:has(span:contains("Piso")) .value
+[5] .ficha-inmueble__piso
+[6] .caracteristicas [class*="floor"]
+[7] [data-testid="floor"]
+[8] .icono-piso ~ span
+[9] td:has(strong:contains("Piso")) + td
+[10] .property-floor
+
+------------------------------------------------------------------
+XPATH:
+------------------------------------------------------------------
+//dt[contains(text(),'Piso')]/following-sibling::dd[1]
+//td[contains(text(),'Piso')]/following-sibling::td[1]
+//li[contains(.,'Piso')]//strong
+//*[contains(@class,'piso') or contains(@class,'floor')]
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: [Pp]iso[:\s]+(\d{1,3})
+Patrón 2: \bpiso\s+(\d{1,2})\b
+Patrón 3: (\d{1,2})(?:er|do|to|vo|no)?\s*piso
+Patrón 4: piso[:\s]+([Uu]no|[Dd]os|[Tt]res|[Cc]uatro|[Cc]inco|[Ss]eis|[Ss]iete|[Oo]cho|[Nn]ueve|[Dd]iez)
+
+NORMALIZACIÓN DE NÚMEROS EN TEXTO:
+  "primero/primer" → 1
+  "segundo"        → 2
+  "tercero/tercer" → 3
+  "cuarto"         → 4
+  "quinto"         → 5
+  "sexto"          → 6
+  "séptimo"        → 7
+  "octavo"         → 8
+  "noveno"         → 9
+  "décimo"         → 10
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE TÍTULO H1:
+------------------------------------------------------------------
+  Si el H1 contiene "piso X" o "X piso":
+  Regex: (apto|apartamento|local)\s+(?:en\s+)?(?:el\s+)?piso\s+(\d{1,2})
+
+------------------------------------------------------------------
+VALORES ESPECIALES:
+------------------------------------------------------------------
+  "Penthouse" o "PH" → piso alto (marcar como estimado, preguntar cuál)
+  "Semisótano"       → piso 0 o -1
+  "Sótano"           → piso -1
+  "Dúplex"           → puede ocupar 2 pisos (guardar el piso inferior)
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Rango razonable: 1 - 50 (fuera → marcar error)
+- Para casas unifamiliares → piso = 1 por defecto (y número de niveles por separado)
+- Si se extrae de descripción → campo = "estimado - requiere confirmación"
+- Si no se encuentra → campo = null (pendiente de confirmación)
+- IMPORTANTE: "Piso 1" = primer piso = planta baja = ground floor
+- "Primer piso" puede referirse al primer nivel interno de la casa (diferente a edificio)
+- Piso ≤ 2 suma +10 puntos en el sistema de puntuación

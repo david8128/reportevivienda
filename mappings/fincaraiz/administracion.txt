@@ -1,0 +1,90 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: VALOR DE ADMINISTRACIÓN (Cuota mensual de administración)
+Última revisión: 2026-07-28
+Estado: VERIFICADO - confirmado inspeccionando el DOM en vivo
+Página de referencia: https://www.fincaraiz.com.co/apartamento-en-venta-en-pasadena-bogota/194040739
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Cuota mensual de administración del conjunto o edificio en COP.
+  Puede aparecer como "$250.000/mes", "Adm: $250.000", "Administración: 250mil".
+  Si es casa independiente, puede ser $0 o "no aplica".
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden) - VERIFICADOS:
+------------------------------------------------------------------
+[1] .technical-sheet .ant-row  (fila de la ficha técnica "Detalles de la Propiedad")
+      → contiene <span class="ant-typography">Administración</span> como etiqueta
+      → y el valor en el 3er .ant-col de la misma fila, dentro de <strong>$ 700.000</strong>
+[2] .property-price-tag .commonExpenses  (badge junto al precio principal)
+      → texto completo: "+ $ 700.000 administración"
+[3] [class*="administracion"], [class*="Admin"]  (fallback genérico, no confirmado en esta ficha)
+
+------------------------------------------------------------------
+SELECTORES DENTRO DE TABLA DE CARACTERÍSTICAS (VERIFICADO EN VIVO):
+------------------------------------------------------------------
+La ficha técnica "Detalles de la Propiedad" (.technical-sheet) usa filas
+.ant-row con 3 columnas .ant-col: [icono+etiqueta] [dots] [valor].
+No usa <dt>/<dd> ni <td>, sino divs de Ant Design.
+
+  → XPath (valor, robusto):
+    //div[contains(@class,'technical-sheet')]//span[normalize-space(text())='Administración']/ancestor::div[contains(@class,'ant-row')][1]//strong
+
+  → XPath (badge junto al precio, ejemplo original inspeccionado):
+    /html/body/div[2]/div/div/div/div[2]/div[2]/div[1]/div[1]/div/div[2]/div/div/div[2]/div/span
+    (equivale a .property-price-tag > .commonExpenses; NOTA: los índices
+    numéricos de esta ruta pueden variar entre fichas, preferir selector [2] arriba)
+
+  → CSS (etiqueta): .technical-sheet .ant-space-item > span.ant-typography:not(.ant-typography-secondary)
+  → CSS (valor): fila completa .technical-sheet .ant-row, tomar el <strong> del 3er .ant-col
+
+  EJEMPLO REAL CAPTURADO (194040739):
+    Etiqueta: "Administración"
+    Valor:    "$ 700.000"
+    HTML fila:
+      <div class="ant-row ant-row-space-between">
+        <div class="ant-col"><div class="ant-space ...">
+          <span class="ant-typography ant-typography-secondary small">• </span>
+          <span class="ant-typography">Administración</span>
+        </div></div>
+        <div class="ant-col dots"></div>
+        <div class="ant-col"><div class="ant-typography ant-typography-ellipsis ...">
+          <strong>$ 700.000</strong>
+        </div></div>
+      </div>
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+CASO A - valor extraído desde la ficha técnica (selector [1]):
+  El texto ya viene aislado como "$ 700.000" (sin la palabra "administración").
+  Patrón: \$\s*([\d.,]+)
+
+CASO B - valor extraído desde el badge de precio (selector [2]):
+  El formato real es "+ $ 700.000 administración" → la etiqueta va DESPUÉS del número.
+  Patrón: \+?\s*\$\s*([\d.,]+)\s*administraci[oó]n
+
+Patrones genéricos de respaldo (label antes del valor, no confirmados en esta ficha):
+  Patrón 3: [Aa]dministraci[oó]n[:\s]+\$?\s*([\d.,]+)
+  Patrón 4: [Aa]dmin[:\s]+\$?\s*([\d.,]+)
+  Patrón 5: \$\s*([\d.,]+)\s*(?:/|por)\s*mes  (en contexto de administración)
+  Patrón 6: cuota[:\s]+\$?\s*([\d.,]+)
+
+NORMALIZACIÓN:
+  - Remover puntos de miles → número entero (ej. "700.000" → 700000)
+  - Remover espacio entre "$" y el número (formato real usa "$ 700.000")
+  - Si dice "incluida" o "incluye" → valor = 0 (está en el precio)
+  - Si dice "no aplica" o "no tiene" → valor = 0
+  - Si dice "N/A" o "--" → valor = null (desconocido)
+  - Si termina en "mil" → multiplicar por 1.000
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Rango razonable: 0 - 2.000.000 COP/mes
+- Si supera 2.000.000 → verificar (posible error de scraping)
+- Casas independientes usualmente no tienen administración (valor 0)
+- Distinguir administración de "cuota de parqueadero" o "cuota de piscina"
+- Si aparece rango (ej. "250.000 - 350.000") → tomar el valor mayor (conservador)
+- Si no se encuentra → campo = "no disponible" (no marcar como estimado)

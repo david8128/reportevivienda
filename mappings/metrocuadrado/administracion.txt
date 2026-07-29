@@ -1,0 +1,50 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: VALOR DE ADMINISTRACIÓN
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES CSS PRIMARIOS:
+------------------------------------------------------------------
+[1] [class*="Administration"], [class*="administration"]
+[2] [data-testid="admin-fee"], [data-testid="administration"]
+[3] li:has([class*="label"]:contains("Administración")) [class*="value"]
+[4] .property-detail__admin
+[5] [class*="AdminFee"], [class*="adminFee"]
+
+EXTRACCIÓN DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.adminPrice
+  nextData.props.pageProps.property.administration
+  nextData.props.pageProps.listing.adminFee
+  nextData.props.pageProps.result.attributes.administration_price
+
+XPATH:
+------------------------------------------------------------------
+  //span[contains(text(),'Administración')]/following-sibling::span
+  //dt[contains(text(),'Admin')]/following-sibling::dd[1]
+
+REGEX PARA TEXTO:
+------------------------------------------------------------------
+  Patrón 1: [Aa]dministraci[oó]n[:\s]+\$?\s*([\d.,]+)
+  Patrón 2: [Aa]dmin[:\s]+\$?\s*([\d.,]+)
+  Patrón 3: cuota\s+de\s+admin[:\s]+\$?\s*([\d.,]+)
+
+NORMALIZACIÓN:
+------------------------------------------------------------------
+  - "250.000" → 250000
+  - "incluida" | "incluye" → 0
+  - "no aplica" | "no tiene" → 0
+  - "$0" → 0
+  - Rango razonable: 0 - 2.000.000
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado puede mostrar como "Valor administración"
+  - Puede estar incluida en el precio y ser $0
+  - Buscar en __NEXT_DATA__ como primera opción
+
+NOTAS:
+------------------------------------------------------------------
+- Si no está disponible → campo = null (no marcar estimado)
+- Administración ≤ 300.000 suma puntos en el sistema de puntuación

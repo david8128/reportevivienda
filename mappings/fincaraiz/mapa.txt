@@ -1,0 +1,109 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: MAPA (Imagen capturada del mapa de ubicación)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - solo disponible en monitoreo en vivo (no headless)
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Imagen capturada del mapa de la propiedad una vez renderizado.
+  Solo capturada en monitoreo en vivo (pestaña visible).
+  En scraping headless de historial → intentar con Static Maps API si hay coords.
+
+------------------------------------------------------------------
+SELECTORES DEL CONTENEDOR DEL MAPA:
+------------------------------------------------------------------
+[1] #map-section, .map-section
+[2] .ficha-inmueble__mapa, .property-map-container
+[3] [class*="MapContainer"], [class*="map-wrapper"]
+[4] .leaflet-container (Leaflet.js)
+[5] .mapboxgl-canvas (Mapbox)
+[6] div[id*="map"]:not([id*="sitemap"])
+[7] [data-testid="property-map"]
+[8] .google-map, [class*="GoogleMap"]
+[9] iframe[title*="mapa"], iframe[title*="ubicación"]
+[10] canvas.mapboxgl-canvas
+
+------------------------------------------------------------------
+ESTRATEGIA DE CAPTURA EN CONTENT SCRIPT (en vivo):
+------------------------------------------------------------------
+
+Paso 1: Localizar el contenedor del mapa
+  const mapEl = document.querySelector(
+    '#map, .leaflet-container, .mapboxgl-canvas, [class*="map-container"]'
+  );
+
+Paso 2: Esperar renderización
+  Usar polling:
+    const waitForMap = (selector, timeout = 5000) => new Promise((resolve, reject) => {
+      const start = Date.now();
+      const check = () => {
+        const el = document.querySelector(selector);
+        if (el && el.offsetWidth > 0) return resolve(el);
+        if (Date.now() - start > timeout) return reject('Map timeout');
+        requestAnimationFrame(check);
+      };
+      check();
+    });
+
+Paso 3: Calcular posición del elemento
+  const rect = mapEl.getBoundingClientRect();
+  → Enviar al service worker: { top, left, width, height }
+
+Paso 4: Capturar con chrome.tabs.captureVisibleTab (desde service worker)
+  chrome.tabs.captureVisibleTab(tabId, { format: 'png' }, (dataUrl) => {
+    // dataUrl es la captura de toda la pestaña visible
+  });
+
+Paso 5: Recortar al área del mapa con Canvas API
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    ctx.drawImage(img,
+      rect.left * dpr, rect.top * dpr,
+      rect.width * dpr, rect.height * dpr,
+      0, 0, rect.width, rect.height
+    );
+    const croppedDataUrl = canvas.toDataURL('image/png');
+  };
+  img.src = fullPageDataUrl;
+
+------------------------------------------------------------------
+ALTERNATIVA PARA SCRAPING HEADLESS (SIN PESTAÑA VISIBLE):
+------------------------------------------------------------------
+  Si hay coordenadas disponibles (lat, lng), usar Google Static Maps API:
+  
+  URL: https://maps.googleapis.com/maps/api/staticmap?
+       center={lat},{lng}&zoom=15&size=600x400&key={API_KEY}
+  
+  NOTA: Requiere API Key de Google Maps (configurar en dashboard de la extensión)
+  Si no hay API Key ni coordenadas → campo mapa = null
+
+------------------------------------------------------------------
+PARA MAPAS EN IFRAME:
+------------------------------------------------------------------
+  Si el mapa es un <iframe> de Google Maps:
+    → Extraer URL del iframe: /q=([-\d.]+),([-\d.]+)/ para coordenadas
+    → No se puede capturar directamente (cross-origin)
+    → Usar coordenadas con Static Maps API como alternativa
+
+------------------------------------------------------------------
+DIMENSIONES Y OPTIMIZACIÓN:
+------------------------------------------------------------------
+  - Dimensiones objetivo: 600x400 px (reducir si es muy grande)
+  - Formato: PNG comprimido
+  - Tamaño máximo almacenado: 500 KB (base64 ~= 667 KB texto)
+  - Si la imagen supera 500 KB → reducir calidad a JPEG 80%
+  - Almacenamiento: IndexedDB (campo "mapa_imagen" como string base64)
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Este campo SOLO está disponible cuando el usuario visita la página activamente
+- En el scraping de historial → intentar Static Maps API si hay coordenadas
+- Si no hay imagen disponible → mostrar placeholder en el PDF
+- El mapa es informativo; no afecta la puntuación pero sí la calidad del reporte

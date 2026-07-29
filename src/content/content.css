@@ -1,0 +1,143 @@
+/* content.css
+   Estilos del panel flotante de confirmación e indicador de guardado
+   inyectados por ReporteVivienda en fincaraiz.com y metrocuadrado.com.
+   Prefijo "rv-" para evitar colisiones con los estilos del sitio anfitrión. */
+
+#rv-indicador-guardado {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 2147483000;
+    background: #1e8e3e;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font: 13px/1.4 Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#rv-indicador-guardado.rv-visible {
+    opacity: 1;
+}
+
+#rv-panel-confirmacion {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 320px;
+    max-height: 70vh;
+    overflow-y: auto;
+    z-index: 2147483000;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font: 13px/1.5 Arial, sans-serif;
+    color: #202124;
+}
+
+#rv-panel-confirmacion .rv-header {
+    background: #1a73e8;
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 10px 10px 0 0;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+#rv-panel-confirmacion .rv-header button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 6px;
+}
+
+#rv-panel-confirmacion .rv-body {
+    padding: 12px;
+}
+
+#rv-panel-confirmacion .rv-campo {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+#rv-panel-confirmacion .rv-campo:last-child {
+    border-bottom: none;
+}
+
+#rv-panel-confirmacion .rv-pregunta {
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+#rv-panel-confirmacion .rv-sub {
+    color: #5f6368;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+#rv-panel-confirmacion .rv-opciones {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+#rv-panel-confirmacion button.rv-opcion {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #dadce0;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#rv-panel-confirmacion button.rv-opcion:hover {
+    background: #e8f0fe;
+    border-color: #1a73e8;
+}
+
+#rv-panel-confirmacion button.rv-opcion.rv-si {
+    color: #1e8e3e;
+}
+
+#rv-panel-confirmacion button.rv-opcion.rv-no {
+    color: #d93025;
+}
+
+#rv-panel-confirmacion input.rv-input-numero {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+#rv-panel-confirmacion .rv-footer {
+    padding: 8px 12px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+
+#rv-panel-confirmacion .rv-footer button {
+    background: none;
+    border: none;
+    color: #1a73e8;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#rv-panel-confirmacion .rv-confirmado {
+    color: #1e8e3e;
+    font-size: 12px;
+    font-weight: bold;
+}

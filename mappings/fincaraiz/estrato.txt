@@ -1,0 +1,92 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: ESTRATO SOCIOECONÓMICO
+Última revisión: 2026-07-28
+Estado: VERIFICADO - confirmado inspeccionando el DOM en vivo
+Página de referencia: https://www.fincaraiz.com.co/apartamento-en-venta-en-pasadena-bogota/194040739
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Estrato socioeconómico del inmueble en Colombia (1 al 6).
+  Es un campo clave para los filtros (estrato ≤ 4 preferido).
+
+------------------------------------------------------------------
+SELECTOR VERIFICADO (fuente principal - ficha técnica):
+------------------------------------------------------------------
+El estrato aparece como una fila más de la ficha técnica ".technical-sheet"
+(misma estructura de Ant Design usada por administración, piso, etc.):
+etiqueta <span>Estrato</span> + valor <strong>5</strong> en el 3er .ant-col
+de la fila .ant-row correspondiente.
+
+  → XPath (robusto, por etiqueta - PREFERIDO):
+    //div[contains(@class,'technical-sheet')]//span[normalize-space(text())='Estrato']/ancestor::div[contains(@class,'ant-row')][1]//strong
+
+  → XPath (ejemplo original inspeccionado, por índice fijo):
+    /html/body/div[2]/div/div/div/div[2]/div[2]/div[1]/div[2]/div/div/div[9]
+    (NOTA: el índice [9] depende de la posición de "Estrato" entre las
+    filas de la ficha técnica; puede variar si cambia el orden/cantidad
+    de campos mostrados. Preferir el XPath robusto de arriba.)
+
+  → CSS (fila completa): .technical-sheet .ant-row
+  → Valor real verificado (194040739): "5" (dentro de <strong>5</strong>)
+
+  HTML real de la fila:
+    <div class="ant-row ant-row-space-between">
+      <div class="ant-col"><div class="ant-space ...">
+        <span class="ant-typography ant-typography-secondary small">• </span>
+        <span class="ant-typography">Estrato</span>
+      </div></div>
+      <div class="ant-col dots"></div>
+      <div class="ant-col"><div class="ant-typography ant-typography-ellipsis ..." title="5">
+        <strong>5</strong>
+      </div></div>
+    </div>
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (fallback genérico, no confirmados en esta ficha):
+------------------------------------------------------------------
+[1] .estrato, [class*="estrato"]
+[2] [data-id="estrato"], [data-feature="estrato"]
+[3] li:has(span:contains("Estrato")) strong
+[4] .ficha-inmueble__estrato
+[5] [class*="Estrato"] [class*="value"]
+[6] .property-stratum, [class*="stratum"]
+[7] td:has(strong:contains("Estrato")) + td
+[8] .caracteristicas-basicas .estrato span
+[9] [data-testid="estrato"], [data-testid="stratum"]
+[10] .chip-estrato
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: [Ee]strato[:\s]+(\d)
+Patrón 2: [Ee]strato\s+(\d)\b
+Patrón 3: \bestrato\s*([1-6])\b
+Patrón 4: [Ee]strato[:\s]+([Uu]no|[Dd]os|[Tt]res|[Cc]uatro|[Cc]inco|[Ss]eis)
+
+NORMALIZACIÓN DE VALORES EN TEXTO:
+  "uno"    → 1
+  "dos"    → 2
+  "tres"   → 3
+  "cuatro" → 4
+  "cinco"  → 5
+  "seis"   → 6
+
+------------------------------------------------------------------
+VALORES ESPERADOS:
+------------------------------------------------------------------
+  1 = Bajo-Bajo  → INCLUIR (cumple filtro ≤ 4)
+  2 = Bajo       → INCLUIR (cumple filtro ≤ 4)
+  3 = Medio-Bajo → INCLUIR (cumple filtro ≤ 4) ← ÓPTIMO para arriendo
+  4 = Medio      → INCLUIR (cumple filtro ≤ 4) ← límite del filtro
+  5 = Medio-Alto → EXCLUIR (no cumple filtro ≤ 4)
+  6 = Alto       → EXCLUIR (no cumple filtro ≤ 4)
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Si el estrato no está explícito → buscar en la descripción con regex
+- Si se extrae de descripción → campo = "estimado - requiere confirmación"
+- Si el estrato no se puede determinar → campo = null, marcar pendiente
+- El estrato también puede inferirse por la dirección/barrio (no implementar)
+- Valor inválido (0, 7+) → marcar como error y dejar pendiente

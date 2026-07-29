@@ -1,0 +1,107 @@
+================================================================
+MAPEO DE SELECTORES - FINCARAIZ.COM
+Campo: UBICACIÓN (Dirección, Barrio, Ciudad, Departamento)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Ubicación geográfica del inmueble en texto.
+  Componentes: dirección, barrio, localidad, ciudad, departamento.
+  También incluye la extracción de coordenadas si están disponibles.
+
+------------------------------------------------------------------
+SELECTORES CSS PARA TEXTO DE UBICACIÓN (probar en orden):
+------------------------------------------------------------------
+[1] .ficha-inmueble__ubicacion, .property-location
+[2] [class*="ubicacion"], [class*="location"]
+[3] [data-feature="ubicacion"], [data-id="address"]
+[4] .direccion-inmueble, .address-property
+[5] h1 ~ .subtitulo, h1 ~ .location  (ubicación debajo del título)
+[6] .breadcrumb (contiene ciudad → localidad → barrio)
+[7] [data-testid="location"], [data-testid="address"]
+[8] .ciudad-barrio, .barrio-ciudad
+[9] address.property-address
+[10] .ficha-cabecera .ubicacion
+
+------------------------------------------------------------------
+COMPONENTES DE UBICACIÓN:
+------------------------------------------------------------------
+  Dirección (calle/carrera/transversal):
+    CSS: [class*="direccion"], [class*="address"]
+    Regex: (Calle|Carrera|Cra|Cl|Diagonal|Transversal|Trans|Av|Avenida)\.?\s+\d+[A-Z]?\s*[#\-]\s*\d+
+
+  Barrio:
+    CSS: [class*="barrio"], [class*="neighborhood"]
+    Regex: [Bb]arrio[:\s]+([A-ZÁ-Ú][A-Za-záéíóúñÑ\s]+)
+    Breadcrumb: último elemento antes de "Apartamentos" o tipo de inmueble
+
+  Localidad/Zona:
+    CSS: [class*="localidad"], [class*="zone"]
+    Regex: [Ll]ocalidad[:\s]+([A-Z][A-Za-z\s]+)
+
+  Ciudad:
+    CSS: [class*="ciudad"], [class*="city"]
+    Desde URL: regex /en-([a-z-]+)/ (ej. /en-bogota/, /en-medellin/)
+
+  Departamento:
+    Inferir desde ciudad si no está explícito
+
+------------------------------------------------------------------
+SELECTORES DEL MAPA (Google Maps o similar):
+------------------------------------------------------------------
+  Contenedor del mapa:
+  [1] #map, .mapa, [class*="map-container"], [class*="google-map"]
+  [2] .ficha-inmueble__mapa, .property-map
+  [3] [data-testid="map"], [aria-label*="mapa"]
+  [4] iframe[src*="google.com/maps"], iframe[src*="maps.googleapis"]
+  [5] .leaflet-container  (si usan Leaflet)
+  [6] .mapboxgl-map  (si usan Mapbox)
+
+  Coordenadas desde mapa:
+  - Google Maps embed URL: regex /q=([-\d.]+),([-\d.]+)/
+  - data-lat y data-lng en el elemento del mapa
+  - Script JSON-LD: "geo" → "latitude", "longitude"
+
+------------------------------------------------------------------
+EXTRACCIÓN DE COORDENADAS:
+------------------------------------------------------------------
+  CSS/Atributos:
+    [data-lat], [data-lng], [data-latitude], [data-longitude]
+    [data-coordinates], [data-latlng]
+
+  Desde scripts en la página:
+    Regex en scripts: lat[itude]?\s*[:=]\s*([-\d.]+)
+    Regex en scripts: lng|lon[gitude]?\s*[:=]\s*([-\d.]+)
+    JSON en window.__INITIAL_STATE__: buscar "latitude" y "longitude"
+
+------------------------------------------------------------------
+CAPTURA DE IMAGEN DEL MAPA:
+------------------------------------------------------------------
+  Esperar a que el contenedor del mapa sea visible:
+    → Usar MutationObserver o polling con timeout de 5 segundos
+  
+  Área a capturar:
+    → Element.getBoundingClientRect() del contenedor del mapa
+    → Usar chrome.tabs.captureVisibleTab (en content script con mensaje)
+    → Recortar la imagen al área del mapa usando Canvas API
+
+  Formato: data:image/png;base64 (máximo 500KB)
+  Dimensiones mínimas: 300x200 px
+  Fallback: si el mapa no carga en 5 segundos → campo = null
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO DE DESCRIPCIÓN:
+------------------------------------------------------------------
+  Ciudad: (Bogotá|Medellín|Cali|Barranquilla|Bucaramanga|Pereira|Cartagena|Cúcuta|Manizales|Ibagué)
+  Barrio desde descripción: barrio\s+([A-ZÁ-Ú][A-Za-záéíóúñ\s]{3,30})
+  Cerca de: (cerca|frente|al lado|diagonal)\s+(?:a|al)?\s+([A-Z][A-Za-z\s]{3,40})
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Prioritizar: dirección completa > barrio > localidad > ciudad
+- Si la dirección está oculta por privacidad → solo guardar barrio/sector
+- El texto de ubicación en el breadcrumb es habitualmente el más limpio
+- Guardar objeto: { direccion, barrio, localidad, ciudad, departamento, lat, lng }
+- La imagen del mapa se guarda solo en monitoreo en vivo (no en scraping headless de historial)

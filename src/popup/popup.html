@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ReporteVivienda</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <header>
+        <img src="../icons/icon48.png" alt="" width="24" height="24">
+        <h1>ReporteVivienda</h1>
+    </header>
+
+    <main>
+        <button id="btn-recolectar" class="btn-primario">📥 Recopilar desde historial</button>
+
+        <div id="progreso-contenedor" class="oculto">
+            <div class="barra-progreso">
+                <div id="barra-progreso-relleno" class="barra-progreso-relleno"></div>
+            </div>
+            <p id="progreso-texto">Procesando 0 de 0 propiedades</p>
+        </div>
+
+        <div class="fila-toggle">
+            <label class="switch">
+                <input type="checkbox" id="chk-monitoreo-vivo" checked>
+                <span class="slider"></span>
+            </label>
+            <span>Monitoreo en vivo</span>
+            <span id="estado-monitoreo" class="badge-estado">Activo</span>
+        </div>
+
+        <div class="resumen">
+            <div class="resumen-item">
+                <span id="total-propiedades">0</span>
+                <label>Propiedades</label>
+            </div>
+            <div class="resumen-item">
+                <span id="total-pendientes">0</span>
+                <label>Por confirmar</label>
+            </div>
+            <div class="resumen-item">
+                <span id="total-elegibles">0</span>
+                <label>Elegibles</label>
+            </div>
+        </div>
+
+        <button id="btn-dashboard" class="btn-secundario">📊 Abrir Dashboard</button>
+    </main>
+
+    <script src="popup.js" type="module"></script>
+</body>
+
+</html>

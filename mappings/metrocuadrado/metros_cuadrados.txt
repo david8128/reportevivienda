@@ -1,0 +1,78 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: METROS CUADRADOS (Área construida / privada)
+Última revisión: 2026-07-28
+Estado: ESTIMADO - verificar inspeccionando el DOM del sitio
+================================================================
+
+DESCRIPCIÓN DEL CAMPO:
+  Área en metros cuadrados de la propiedad.
+  MetroCuadrado.com usa React y carga datos dinámicamente.
+
+------------------------------------------------------------------
+SELECTORES CSS PRIMARIOS (probar en orden):
+------------------------------------------------------------------
+[1] [class*="AreaLabel"], [class*="area-label"]
+[2] .sc-area, [class*="squareMeters"], [class*="square-meters"]
+[3] [data-id="area"], [data-testid="area"]
+[4] .property-detail__area
+[5] .detail-feature[data-feature="area"] span
+[6] [class*="AreaValue"], [class*="areaValue"]
+[7] ul.property-features li:first-child strong
+[8] .info-inmueble [class*="area"]
+[9] .caracteristica-area .valor
+[10] span[class*="AreaTotal"]
+
+------------------------------------------------------------------
+SELECTORES ESPECÍFICOS DE METROCUADRADO (estructura React):
+------------------------------------------------------------------
+  MetroCuadrado suele generar clases de CSS-in-JS como "sc-XXXX" o "css-XXXXX"
+  Usar atributos data-* como alternativa más estable:
+  
+  [data-property="area"], [data-field="area"]
+  
+  También buscar en el estado inicial de React:
+  window.__NEXT_DATA__ o window.__INITIAL_PROPS__
+  Parsear JSON → buscar "area" o "metrosCuadrados"
+
+------------------------------------------------------------------
+EXTRACCIÓN DESDE WINDOW.__NEXT_DATA__ (método preferido):
+------------------------------------------------------------------
+  const nextData = JSON.parse(
+    document.getElementById('__NEXT_DATA__').textContent
+  );
+  // Navegar el objeto hasta encontrar área:
+  nextData.props.pageProps.property.area
+  nextData.props.pageProps.listing.features.area
+  nextData.props.pageProps.result.attributes.area_total
+
+------------------------------------------------------------------
+XPATH:
+------------------------------------------------------------------
+//*[contains(text(),'m²')]/preceding-sibling::*[1]
+//span[contains(text(),'m²')]
+//label[contains(text(),'Área')]/following-sibling::span
+
+------------------------------------------------------------------
+REGEX PARA EXTRACCIÓN DE TEXTO:
+------------------------------------------------------------------
+Patrón 1: (\d{1,4})\s*m²
+Patrón 2: [Áa]rea[:\s]+(\d{1,4})\s*(?:m²|metros?)
+Patrón 3: (\d{1,4})\s*metros\s*cuadrados?
+Patrón 4: área\s*(?:construida|privada|total)?[:\s]+(\d{1,4})
+
+------------------------------------------------------------------
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado muestra frecuentemente "Área total" y "Área privada" por separado
+  - Si hay ambas → guardar "Área privada" como campo principal
+  - La estructura React puede cambiar los nombres de clases con cada deploy
+  - Preferir extracción de __NEXT_DATA__ o __INITIAL_STATE__ sobre CSS
+
+------------------------------------------------------------------
+NOTAS DE IMPLEMENTACIÓN:
+------------------------------------------------------------------
+- Usar __NEXT_DATA__ como primera opción (más estable que clases CSS)
+- Si __NEXT_DATA__ no está disponible → usar regex sobre todo el texto de la página
+- Rango esperado: 20 - 500 m²
+- Si está fuera del rango → marcar como "estimado - requiere confirmación"

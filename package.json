@@ -1,0 +1,12 @@
+{
+    "name": "reportevivienda",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Extension de Chrome para recopilar y puntuar propiedades de FincaRaiz y MetroCuadrado.",
+    "scripts": {
+        "setup-libs": "node scripts/copy-libs.js"
+    },
+    "devDependencies": {
+        "jspdf": "^4.2.1"
+    }
+}

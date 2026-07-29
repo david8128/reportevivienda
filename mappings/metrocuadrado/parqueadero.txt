@@ -1,0 +1,42 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: PARQUEADERO
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES CSS PRIMARIOS:
+------------------------------------------------------------------
+[1] [class*="Parking"], [class*="parking"], [class*="parqueadero"]
+[2] [data-testid="parking"], [data-testid="parqueadero"]
+[3] .amenity-item:contains("Parqueadero")
+[4] .property-features [class*="garage"]
+[5] [class*="ParkingSpaces"], [class*="garajes"]
+
+EXTRACCIÓN DESDE __NEXT_DATA__:
+------------------------------------------------------------------
+  nextData.props.pageProps.property.parkingSpaces  (número)
+  nextData.props.pageProps.property.garage
+  nextData.props.pageProps.result.attributes.parking_spaces
+
+REGEX PARA TEXTO:
+------------------------------------------------------------------
+  Patrón 1: (\d+)\s*parqueadero
+  Patrón 2: \bgaraje\b
+  Patrón 3: (\d+)\s*puesto[s]?\s*de\s*parqueo
+
+NORMALIZACIÓN:
+------------------------------------------------------------------
+  0 → false (sin parqueadero)
+  1+ → true (con número de puestos)
+  "incluido" sin número → 1 (estimado)
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado muestra explícitamente el número de parqueaderos
+  - __NEXT_DATA__ devuelve número entero directamente
+  - Más confiable que FincaRaiz para este campo
+
+NOTAS:
+------------------------------------------------------------------
+- Parqueadero suma +10 pts en el sistema de puntuación
+- Si __NEXT_DATA__ devuelve 0 → false con confianza (no marcar estimado)

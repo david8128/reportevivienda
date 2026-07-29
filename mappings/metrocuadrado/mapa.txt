@@ -1,0 +1,69 @@
+================================================================
+MAPEO DE SELECTORES - METROCUADRADO.COM
+Campo: MAPA (Imagen capturada)
+Última revisión: 2026-07-28
+================================================================
+
+SELECTORES DEL MAPA:
+------------------------------------------------------------------
+[1] .leaflet-container (Leaflet.js - más común en MetroCuadrado)
+[2] .leaflet-map-pane (el canvas renderizado del mapa)
+[3] [class*="MapSection"], [class*="map-section"]
+[4] .mapboxgl-canvas
+[5] [data-testid="property-map"]
+
+ESTRATEGIA DE CAPTURA ESPECÍFICA PARA LEAFLET:
+------------------------------------------------------------------
+  Leaflet renderiza tiles en elementos <img> dentro del DOM (no en canvas).
+  Esto facilita la captura con captureVisibleTab.
+
+  Paso 1: Verificar que Leaflet está cargado
+    const isLeaflet = !!window.L;
+
+  Paso 2: Obtener instancia del mapa
+    // Leaflet guarda instancias en los elementos del DOM:
+    const mapEl = document.querySelector('.leaflet-container');
+    const mapInstance = mapEl?._leaflet_map || 
+                        Object.values(window).find(v => v?._leaflet_id !== undefined && v?.getCenter);
+
+  Paso 3: Centrar el mapa en la propiedad (si tiene coordenadas)
+    if (mapInstance && lat && lng) {
+      mapInstance.setView([lat, lng], 15);
+    }
+
+  Paso 4: Esperar a que los tiles carguen
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    // O escuchar: mapInstance.on('load', resolve);
+
+  Paso 5: Capturar región del mapa (mismo proceso que FincaRaiz)
+    const rect = mapEl.getBoundingClientRect();
+    // Enviar rect al service worker para captureVisibleTab + crop
+
+ALTERNATIVA CON OPENSTREETMAP STATIC:
+------------------------------------------------------------------
+  Si hay coordenadas disponibles, usar OpenStreetMap (gratuito, sin API key):
+  URL: https://staticmap.openstreetmap.de/staticmap.php?
+       center={lat},{lng}&zoom=15&size=600x400&markers={lat},{lng},red-pushpin
+  
+  O usando la API de tiles directamente:
+  https://tile.openstreetmap.org/{z}/{x}/{y}.png
+
+ALTERNATIVA CON GOOGLE STATIC MAPS:
+------------------------------------------------------------------
+  URL: https://maps.googleapis.com/maps/api/staticmap?
+       center={lat},{lng}&zoom=15&size=600x400&
+       markers=color:red|{lat},{lng}&key={API_KEY}
+  NOTA: Requiere API Key configurada en el dashboard
+
+DIFERENCIAS CON FINCARAIZ:
+------------------------------------------------------------------
+  - MetroCuadrado usa Leaflet (más fácil de capturar que Google Maps)
+  - Las coordenadas están disponibles en __NEXT_DATA__ (más confiable)
+  - Tiles de Leaflet cargados como imágenes → captureVisibleTab más efectivo
+
+NOTAS:
+------------------------------------------------------------------
+- Priorizar OpenStreetMap Static (sin API key) cuando hay coords disponibles
+- Si no hay coords ni mapa visible → campo = null
+- Tamaño máximo: 500 KB
+- Formato: PNG o JPEG 80%
