@@ -488,6 +488,24 @@ document.getElementById('input-importar-config').addEventListener('change', asyn
     e.target.value = '';
 });
 
+document.getElementById('btn-recuperar-historial').addEventListener('click', async () => {
+    if (!confirm('¿Buscar y restaurar propiedades eliminadas que aún estén en el historial de Chrome?')) return;
+
+    const boton = document.getElementById('btn-recuperar-historial');
+    boton.disabled = true;
+    mostrarToast('Buscando propiedades eliminadas en el historial...', 0);
+    try {
+        const resultado = await enviarMensaje({ type: MSG.RECUPERAR_DESDE_HISTORIAL });
+        if (!resultado?.ok) throw new Error(resultado?.error || 'No fue posible recuperar las propiedades.');
+        mostrarToast(`Recuperación terminada: ${resultado.recuperadas}/${resultado.encontradas} restauradas${resultado.noDisponibles ? `, ${resultado.noDisponibles} no disponibles` : ''}`);
+        await cargarYRenderizarTabla();
+    } catch (error) {
+        mostrarToast(`Error al recuperar: ${error.message}`);
+    } finally {
+        boton.disabled = false;
+    }
+});
+
 document.getElementById('btn-aplicar-patch-mapeo').addEventListener('click', async () => {
     const origen = document.getElementById('patch-mapeo-origen').value;
     const campo = document.getElementById('patch-mapeo-campo').value;

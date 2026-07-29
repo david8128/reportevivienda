@@ -177,6 +177,49 @@ async function procesarItemDeCola(item, config) {
     }
 }
 
+/**
+ * Restaura anuncios eliminados de IndexedDB que todavía existen en el historial
+ * de Chrome. Se procesa directamente, sin reutilizar la cola, porque esta puede
+ * conservar URLs marcadas como ya procesadas antes de la eliminación.
+ */
+async function recuperarDesdeHistorial() {
+    if (recolectando) throw new Error('Ya hay una recolección en curso. Inténtalo cuando termine.');
+
+    recolectando = true;
+    try {
+        const config = await loadConfig();
+        const resultadosPorHost = await Promise.all(
+            HOSTS_OBJETIVO.map((host) => chrome.history.search({ text: host, startTime: 0, maxResults: 10000 }))
+        );
+        const urlsHistorial = [...new Set(resultadosPorHost.flat()
+            .map((item) => item.url)
+            .filter((url) => esUrlSoportada(url) && esPaginaDeDetalle(url)))];
+        const urlsGuardadas = new Set((await obtenerTodasLasPropiedades()).map((p) => p.url));
+        const urlsFaltantes = urlsHistorial.filter((url) => !urlsGuardadas.has(url));
+
+        let recuperadas = 0;
+        let noDisponibles = 0;
+        for (const url of urlsFaltantes) {
+            const resultado = await procesarUrlOffscreen(url);
+            if (!resultado?.ok) {
+                noDisponibles += 1;
+                continue;
+            }
+
+            const puntuacion = recalcularPuntuacionSimple(resultado.datos, config.pesos, config.filtros);
+            await guardarPropiedad({ ...resultado.datos, puntuacion });
+            recuperadas += 1;
+            await delay(config.rateLimit.delayMs);
+        }
+
+        await actualizarBadgePendientes();
+        broadcast({ type: MSG.PROPIEDAD_GUARDADA, recuperadas, recuperacion: true });
+        return { encontradas: urlsFaltantes.length, recuperadas, noDisponibles };
+    } finally {
+        recolectando = false;
+    }
+}
+
 /* ------------------------------------------------------------------ */
 /* Monitoreo en vivo (mensajes desde content script)                   */
 /* ------------------------------------------------------------------ */
@@ -334,6 +377,16 @@ chrome.runtime.onMessage.addListener((mensaje, sender, sendResponse) => {
             case MSG.APLICAR_PATCH_MAPEO: {
                 try {
                     const resultado = await aplicarPatchMapeo(mensaje.origen, mensaje.campo);
+                    sendResponse({ ok: true, ...resultado });
+                } catch (e) {
+                    sendResponse({ ok: false, error: e.message });
+                }
+                break;
+            }
+
+            case MSG.RECUPERAR_DESDE_HISTORIAL: {
+                try {
+                    const resultado = await recuperarDesdeHistorial();
                     sendResponse({ ok: true, ...resultado });
                 } catch (e) {
                     sendResponse({ ok: false, error: e.message });
