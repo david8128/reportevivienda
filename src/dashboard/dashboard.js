@@ -488,6 +488,24 @@ document.getElementById('input-importar-config').addEventListener('change', asyn
     e.target.value = '';
 });
 
+document.getElementById('btn-deduplicar-db').addEventListener('click', async () => {
+    if (!confirm('¿Fusionar todas las propiedades y URLs duplicadas de la base local?')) return;
+
+    const boton = document.getElementById('btn-deduplicar-db');
+    boton.disabled = true;
+    mostrarToast('Deduplicando la base de datos...', 0);
+    try {
+        const resultado = await enviarMensaje({ type: MSG.DEDUPLICAR_BASE_DATOS });
+        if (!resultado?.ok) throw new Error(resultado?.error || 'No fue posible deduplicar la base de datos.');
+        mostrarToast(`Deduplicación terminada: ${resultado.propiedadesFusionadas} propiedades y ${resultado.itemsColaFusionados} elementos de cola fusionados`);
+        await cargarYRenderizarTabla();
+    } catch (error) {
+        mostrarToast(`Error al deduplicar: ${error.message}`);
+    } finally {
+        boton.disabled = false;
+    }
+});
+
 document.getElementById('btn-recuperar-historial').addEventListener('click', async () => {
     if (!confirm('¿Buscar y restaurar propiedades eliminadas que aún estén en el historial de Chrome?')) return;
 

@@ -58,6 +58,14 @@ Característica: Base de datos local de propiedades
       Y conserva un solo registro de la propiedad
       Y mantiene las confirmaciones manuales y teléfonos al fusionar datos actualizados
 
+    Escenario: Deduplicar manualmente toda la base local
+      Dado que existen propiedades o elementos de cola con URLs equivalentes
+      Cuando selecciono "Deduplicar toda la base de datos" en el dashboard
+      Entonces la extensión fusiona cada grupo de propiedades equivalentes
+      Y conserva el historial de precios, las confirmaciones manuales y teléfonos
+      Y elimina los elementos duplicados de la cola histórica
+      Y recalcula las puntuaciones de los registros resultantes
+
   Escenario: Historial de cambios de precio
     Dado que una propiedad ya existe en la base de datos con precio 380000000
     Cuando el scraper detecta que el precio actual es 350000000

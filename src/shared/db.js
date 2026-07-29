@@ -320,6 +320,75 @@ export async function eliminarPropiedades(ids) {
     await Promise.all(ids.map((id) => promisifyRequest(store.delete(id))));
 }
 
+/**
+ * Fusiona los registros con URLs equivalentes y conserva su información útil.
+ * También mueve los cambios de precio al registro conservado y limpia la cola
+ * de historial, para que todos los flujos operen sobre una sola identidad.
+ */
+export async function deduplicarBaseDeDatos() {
+    const db = await openDB();
+    const t = tx(db, [STORE_PROPIEDADES, STORE_CAMBIOS_PRECIO, STORE_HISTORIAL_COLA], 'readwrite');
+    const propiedadesStore = t.objectStore(STORE_PROPIEDADES);
+    const cambiosStore = t.objectStore(STORE_CAMBIOS_PRECIO);
+    const colaStore = t.objectStore(STORE_HISTORIAL_COLA);
+    const propiedades = await promisifyRequest(propiedadesStore.getAll());
+    const gruposPropiedades = new Map();
+    let urlsNormalizadas = 0;
+
+    for (const propiedad of propiedades) {
+        const url = normalizarUrlPropiedad(propiedad.url);
+        if (url !== propiedad.url) urlsNormalizadas += 1;
+        const grupo = gruposPropiedades.get(url) || [];
+        grupo.push(propiedad);
+        gruposPropiedades.set(url, grupo);
+    }
+
+    let propiedadesFusionadas = 0;
+    for (const [url, grupo] of gruposPropiedades) {
+        let consolidada = { ...grupo[0], url };
+        for (const candidata of grupo.slice(1)) {
+            consolidada = fusionarRegistrosDuplicados(consolidada, { ...candidata, url });
+        }
+
+        for (const duplicada of grupo.slice(1)) {
+            const cambios = await promisifyRequest(cambiosStore.index('propiedad_id').getAll(duplicada.id));
+            for (const cambio of cambios) {
+                cambio.propiedad_id = consolidada.id;
+                await promisifyRequest(cambiosStore.put(cambio));
+            }
+            await promisifyRequest(propiedadesStore.delete(duplicada.id));
+            propiedadesFusionadas += 1;
+        }
+        if (grupo.length > 1 || consolidada.url !== grupo[0].url) {
+            await promisifyRequest(propiedadesStore.put(consolidada));
+        }
+    }
+
+    const cola = await promisifyRequest(colaStore.getAll());
+    const gruposCola = new Map();
+    for (const item of cola) {
+        const url = normalizarUrlPropiedad(item.url);
+        const grupo = gruposCola.get(url) || [];
+        grupo.push(item);
+        gruposCola.set(url, grupo);
+    }
+
+    let itemsColaFusionados = 0;
+    for (const [url, grupo] of gruposCola) {
+        const pendiente = grupo.find((item) => item.estado === ESTADO_COLA.PENDIENTE);
+        const conservada = { ...(pendiente || grupo[0]), url };
+        for (const duplicado of grupo.filter((item) => item.id !== conservada.id)) {
+            await promisifyRequest(colaStore.delete(duplicado.id));
+            itemsColaFusionados += 1;
+        }
+        if (grupo.length > 1 || conservada.url !== (pendiente || grupo[0]).url) {
+            await promisifyRequest(colaStore.put(conservada));
+        }
+    }
+
+    return { propiedadesAnalizadas: propiedades.length, propiedadesFusionadas, itemsColaFusionados, urlsNormalizadas };
+}
+
 /** Devuelve propiedades sin actualizar hace más de `dias` días. */
 export async function obtenerPropiedadesAntiguas(dias) {
     const todas = await obtenerTodasLasPropiedades();

@@ -12,7 +12,8 @@ import {
     encolarUrls, obtenerPendientesCola, actualizarEstadoCola, contarPendientesCola,
     obtenerPropiedadPorUrl, guardarPropiedad, obtenerTodasLasPropiedades,
     actualizarPropiedad, exportarBaseDeDatos, importarBaseDeDatos,
-    obtenerPropiedadesAntiguas, eliminarPropiedades, ESTADO_COLA, normalizarUrlPropiedad
+    obtenerPropiedadesAntiguas, eliminarPropiedades, ESTADO_COLA, normalizarUrlPropiedad,
+    deduplicarBaseDeDatos
 } from '../shared/db.js';
 import { recalcularPuntuacionSimple } from '../shared/scorer.js';
 import { esUrlSoportada, esPaginaDeDetalle, detectarOrigen } from '../shared/extractors/index.js';
@@ -391,6 +392,18 @@ chrome.runtime.onMessage.addListener((mensaje, sender, sendResponse) => {
             case MSG.RECUPERAR_DESDE_HISTORIAL: {
                 try {
                     const resultado = await recuperarDesdeHistorial();
+                    sendResponse({ ok: true, ...resultado });
+                } catch (e) {
+                    sendResponse({ ok: false, error: e.message });
+                }
+                break;
+            }
+
+            case MSG.DEDUPLICAR_BASE_DATOS: {
+                try {
+                    const resultado = await deduplicarBaseDeDatos();
+                    await recalcularTodasLasPuntuaciones();
+                    await actualizarBadgePendientes();
                     sendResponse({ ok: true, ...resultado });
                 } catch (e) {
                     sendResponse({ ok: false, error: e.message });
