@@ -49,6 +49,15 @@ Característica: Base de datos local de propiedades
       | fecha_actualizacion      | datetime | 2026-07-28T10:30:00Z             |
       | estado                   | string   | pendiente_confirmacion           |
 
+    Escenario: Evitar duplicados en cualquier entrada de datos
+      Dado que una misma propiedad puede llegar desde historial, recuperación, monitoreo en vivo o importación
+      Y que sus URLs pueden diferir solo por "www", fragmentos, barras finales o parámetros de seguimiento
+      Cuando la extensión guarda o encola la propiedad
+      Entonces normaliza la URL a una identidad canónica antes de consultarla
+      Y usa esa identidad como clave única en IndexedDB y en la cola
+      Y conserva un solo registro de la propiedad
+      Y mantiene las confirmaciones manuales y teléfonos al fusionar datos actualizados
+
   Escenario: Historial de cambios de precio
     Dado que una propiedad ya existe en la base de datos con precio 380000000
     Cuando el scraper detecta que el precio actual es 350000000

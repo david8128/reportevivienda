@@ -41,13 +41,21 @@ function blobADataUrl(blob) {
 
 async function procesarUrl(url) {
     try {
-        const respuesta = await fetch(url, { credentials: 'omit', redirect: 'follow' });
+        // Los portales pueden requerir la sesión/cookies activa para entregar el
+        // HTML del anuncio; omitirlas convertía toda recuperación en "no disponible".
+        const respuesta = await fetch(url, { credentials: 'include', redirect: 'follow' });
         if (!respuesta.ok) {
             return { ok: false, error: `HTTP ${respuesta.status}` };
         }
         const html = await respuesta.text();
         const doc = parser.parseFromString(html, 'text/html');
         const datos = extraerPropiedad(doc, url);
+
+        // No guardar como propiedad una página de bloqueo, acceso o CAPTCHA que
+        // respondió 200 pero no incluye el dato mínimo indispensable del anuncio.
+        if (!datos.precio || datos.precio <= 0) {
+            return { ok: false, error: 'La respuesta no contiene un precio de propiedad válido' };
+        }
 
         if (datos.ubicacion_lat != null && datos.ubicacion_lng != null) {
             datos.mapa_imagen = await obtenerImagenMapaEstatica(datos.ubicacion_lat, datos.ubicacion_lng);

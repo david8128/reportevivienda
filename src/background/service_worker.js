@@ -12,7 +12,7 @@ import {
     encolarUrls, obtenerPendientesCola, actualizarEstadoCola, contarPendientesCola,
     obtenerPropiedadPorUrl, guardarPropiedad, obtenerTodasLasPropiedades,
     actualizarPropiedad, exportarBaseDeDatos, importarBaseDeDatos,
-    obtenerPropiedadesAntiguas, eliminarPropiedades, ESTADO_COLA
+    obtenerPropiedadesAntiguas, eliminarPropiedades, ESTADO_COLA, normalizarUrlPropiedad
 } from '../shared/db.js';
 import { recalcularPuntuacionSimple } from '../shared/scorer.js';
 import { esUrlSoportada, esPaginaDeDetalle, detectarOrigen } from '../shared/extractors/index.js';
@@ -120,7 +120,7 @@ async function iniciarRecoleccionHistorial() {
         .map((item) => item.url)
         .filter((url) => esUrlSoportada(url) && esPaginaDeDetalle(url));
 
-    const urlsUnicas = [...new Set(urls)];
+    const urlsUnicas = [...new Set(urls.map(normalizarUrlPropiedad))];
     await encolarUrls(urlsUnicas);
 
     progreso.total = await contarPendientesCola();
@@ -193,16 +193,20 @@ async function recuperarDesdeHistorial() {
         );
         const urlsHistorial = [...new Set(resultadosPorHost.flat()
             .map((item) => item.url)
-            .filter((url) => esUrlSoportada(url) && esPaginaDeDetalle(url)))];
-        const urlsGuardadas = new Set((await obtenerTodasLasPropiedades()).map((p) => p.url));
+            .filter((url) => esUrlSoportada(url) && esPaginaDeDetalle(url))
+            .map(normalizarUrlPropiedad))];
+        const urlsGuardadas = new Set((await obtenerTodasLasPropiedades()).map((p) => normalizarUrlPropiedad(p.url)));
         const urlsFaltantes = urlsHistorial.filter((url) => !urlsGuardadas.has(url));
 
         let recuperadas = 0;
         let noDisponibles = 0;
+        const fallos = {};
         for (const url of urlsFaltantes) {
             const resultado = await procesarUrlOffscreen(url);
             if (!resultado?.ok) {
                 noDisponibles += 1;
+                const motivo = resultado?.error || 'Error desconocido';
+                fallos[motivo] = (fallos[motivo] || 0) + 1;
                 continue;
             }
 
@@ -214,7 +218,7 @@ async function recuperarDesdeHistorial() {
 
         await actualizarBadgePendientes();
         broadcast({ type: MSG.PROPIEDAD_GUARDADA, recuperadas, recuperacion: true });
-        return { encontradas: urlsFaltantes.length, recuperadas, noDisponibles };
+        return { encontradas: urlsFaltantes.length, recuperadas, noDisponibles, fallos };
     } finally {
         recolectando = false;
     }

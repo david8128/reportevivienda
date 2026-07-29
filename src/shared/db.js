@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'ReporteVivienda';
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 
 const STORE_PROPIEDADES = 'propiedades';
 const STORE_CONFIGURACION = 'configuracion';
@@ -13,6 +13,44 @@ const STORE_HISTORIAL_COLA = 'historial_cola';
 const STORE_CAMBIOS_PRECIO = 'cambios_precio';
 
 let dbPromise = null;
+
+/**
+ * Identidad única de un anuncio. Conserva los parámetros funcionales del sitio
+ * pero elimina fragmentos y parámetros de seguimiento que crean duplicados.
+ */
+export function normalizarUrlPropiedad(url) {
+    try {
+        const normalizada = new URL(url);
+        normalizada.protocol = normalizada.protocol.toLowerCase();
+        normalizada.hostname = normalizada.hostname.toLowerCase().replace(/^www\./, '');
+        normalizada.hash = '';
+        for (const clave of [...normalizada.searchParams.keys()]) {
+            if (/^(utm_[^=]+|gclid|fbclid|msclkid|_ga)$/i.test(clave)) normalizada.searchParams.delete(clave);
+        }
+        normalizada.pathname = normalizada.pathname.replace(/\/+$/, '') || '/';
+        return normalizada.toString();
+    } catch (e) {
+        return String(url || '').trim().replace(/#.*$/, '').replace(/\/+$/, '');
+    }
+}
+
+function esConfirmacionManual(valor) {
+    return valor === 'confirmado_si' || valor === 'confirmado_no';
+}
+
+function fusionarRegistrosDuplicados(base, candidato) {
+    const baseEsMasReciente = String(base.fecha_actualizacion || '') >= String(candidato.fecha_actualizacion || '');
+    const reciente = baseEsMasReciente ? base : candidato;
+    const anterior = baseEsMasReciente ? candidato : base;
+    const fusionado = { ...anterior, ...reciente, id: base.id, url: normalizarUrlPropiedad(base.url) };
+    for (const campo of ['conjunto_cerrado', 'bueno_vivir_arrendar', 'posible_dividir', 'buena_ubicacion']) {
+        if (esConfirmacionManual(reciente[campo])) fusionado[campo] = reciente[campo];
+        else if (esConfirmacionManual(anterior[campo])) fusionado[campo] = anterior[campo];
+    }
+    fusionado.telefonos = [...new Set([...(base.telefonos || []), ...(candidato.telefonos || [])])];
+    fusionado.campos_estimados = [...new Set([...(base.campos_estimados || []), ...(candidato.campos_estimados || [])])];
+    return fusionado;
+}
 
 /** Abre (o crea) la base de datos IndexedDB y sus object stores/índices. */
 export function openDB() {
@@ -26,7 +64,6 @@ export function openDB() {
 
             if (!db.objectStoreNames.contains(STORE_PROPIEDADES)) {
                 const store = db.createObjectStore(STORE_PROPIEDADES, { keyPath: 'id', autoIncrement: true });
-                store.createIndex('url', 'url', { unique: true });
                 store.createIndex('origen', 'origen', { unique: false });
                 store.createIndex('estrato', 'estrato', { unique: false });
                 store.createIndex('precio', 'precio', { unique: false });
@@ -35,14 +72,76 @@ export function openDB() {
                 store.createIndex('puntuacion', 'puntuacion', { unique: false });
             }
 
+            if (event.oldVersion < 3) {
+                const store = event.target.transaction.objectStore(STORE_PROPIEDADES);
+                if (store.indexNames.contains('url')) store.deleteIndex('url');
+
+                const vistos = new Map();
+                const cursor = store.openCursor();
+                cursor.onsuccess = () => {
+                    const actual = cursor.result;
+                    if (!actual) {
+                        store.createIndex('url', 'url', { unique: true });
+                        return;
+                    }
+                    const registro = actual.value;
+                    const url = normalizarUrlPropiedad(registro.url);
+                    const existente = vistos.get(url);
+                    if (existente) {
+                        const fusionado = fusionarRegistrosDuplicados(existente, { ...registro, url });
+                        vistos.set(url, fusionado);
+                        store.put(fusionado);
+                        actual.delete();
+                    } else {
+                        const normalizado = { ...registro, url };
+                        vistos.set(url, normalizado);
+                        if (normalizado.url !== registro.url) actual.update(normalizado);
+                    }
+                    actual.continue();
+                };
+            }
+
             if (!db.objectStoreNames.contains(STORE_CONFIGURACION)) {
                 db.createObjectStore(STORE_CONFIGURACION, { keyPath: 'clave' });
             }
 
             if (!db.objectStoreNames.contains(STORE_HISTORIAL_COLA)) {
                 const cola = db.createObjectStore(STORE_HISTORIAL_COLA, { keyPath: 'id', autoIncrement: true });
-                cola.createIndex('url', 'url', { unique: true });
                 cola.createIndex('estado', 'estado', { unique: false });
+            }
+
+            if (event.oldVersion < 3) {
+                const cola = event.target.transaction.objectStore(STORE_HISTORIAL_COLA);
+                if (cola.indexNames.contains('url')) cola.deleteIndex('url');
+
+                const vistos = new Map();
+                const cursor = cola.openCursor();
+                cursor.onsuccess = () => {
+                    const actual = cursor.result;
+                    if (!actual) {
+                        cola.createIndex('url', 'url', { unique: true });
+                        return;
+                    }
+                    const registro = actual.value;
+                    const url = normalizarUrlPropiedad(registro.url);
+                    const existente = vistos.get(url);
+                    if (existente) {
+                        const estadoPendiente = existente.estado === ESTADO_COLA.PENDIENTE || registro.estado === ESTADO_COLA.PENDIENTE;
+                        const fusionado = {
+                            ...existente,
+                            estado: estadoPendiente ? ESTADO_COLA.PENDIENTE : existente.estado,
+                            fecha_encolado: existente.fecha_encolado < registro.fecha_encolado ? existente.fecha_encolado : registro.fecha_encolado
+                        };
+                        vistos.set(url, fusionado);
+                        cola.put(fusionado);
+                        actual.delete();
+                    } else {
+                        const normalizado = { ...registro, url };
+                        vistos.set(url, normalizado);
+                        if (normalizado.url !== registro.url) actual.update(normalizado);
+                    }
+                    actual.continue();
+                };
             }
 
             if (!db.objectStoreNames.contains(STORE_CAMBIOS_PRECIO)) {
@@ -85,7 +184,7 @@ const ESTADO = {
 export function crearRegistroPropiedad(datos) {
     const ahora = new Date().toISOString();
     return {
-        url: datos.url,
+        url: normalizarUrlPropiedad(datos.url),
         origen: datos.origen,
         tipo: datos.tipo ?? null,
         precio: datos.precio ?? null,
@@ -118,7 +217,7 @@ export async function obtenerPropiedadPorUrl(url) {
     const t = tx(db, [STORE_PROPIEDADES]);
     const store = t.objectStore(STORE_PROPIEDADES);
     const index = store.index('url');
-    return promisifyRequest(index.get(url));
+    return promisifyRequest(index.get(normalizarUrlPropiedad(url)));
 }
 
 /**
@@ -128,12 +227,13 @@ export async function obtenerPropiedadPorUrl(url) {
  */
 export async function guardarPropiedad(datosExtraidos) {
     const db = await openDB();
-    const existente = await obtenerPropiedadPorUrl(datosExtraidos.url);
+    const url = normalizarUrlPropiedad(datosExtraidos.url);
+    const t = tx(db, [STORE_PROPIEDADES], 'readwrite');
+    const store = t.objectStore(STORE_PROPIEDADES);
+    const existente = await promisifyRequest(store.index('url').get(url));
 
     if (!existente) {
-        const registro = crearRegistroPropiedad(datosExtraidos);
-        const t = tx(db, [STORE_PROPIEDADES], 'readwrite');
-        const store = t.objectStore(STORE_PROPIEDADES);
+        const registro = crearRegistroPropiedad({ ...datosExtraidos, url });
         const id = await promisifyRequest(store.add(registro));
         return { id, esNueva: true, precioAnterior: null };
     }
@@ -142,12 +242,12 @@ export async function guardarPropiedad(datosExtraidos) {
     const precioNuevo = datosExtraidos.precio ?? existente.precio;
     const huboCambioPrecio = precioNuevo != null && precioAnterior != null && precioNuevo !== precioAnterior;
 
-    // No sobrescribir una confirmación manual de "conjunto cerrado" con una
-    // nueva detección automática si la propiedad ya fue reprocesada/revisitada.
-    const datosParaMerge = { ...datosExtraidos };
-    if (existente.conjunto_cerrado === 'confirmado_si' || existente.conjunto_cerrado === 'confirmado_no') {
-        delete datosParaMerge.conjunto_cerrado;
+    // Las detecciones automáticas nunca sustituyen decisiones confirmadas por el usuario.
+    const datosParaMerge = { ...datosExtraidos, url };
+    for (const campo of ['conjunto_cerrado', 'bueno_vivir_arrendar', 'posible_dividir', 'buena_ubicacion']) {
+        if (esConfirmacionManual(existente[campo])) delete datosParaMerge[campo];
     }
+    datosParaMerge.telefonos = [...new Set([...(existente.telefonos || []), ...(datosExtraidos.telefonos || [])])];
 
     const actualizado = {
         ...existente,
@@ -156,8 +256,6 @@ export async function guardarPropiedad(datosExtraidos) {
         fecha_actualizacion: new Date().toISOString()
     };
 
-    const t = tx(db, [STORE_PROPIEDADES], 'readwrite');
-    const store = t.objectStore(STORE_PROPIEDADES);
     await promisifyRequest(store.put(actualizado));
 
     if (huboCambioPrecio) {
@@ -275,7 +373,8 @@ export async function encolarUrls(urls) {
     const index = store.index('url');
 
     let agregadas = 0;
-    for (const url of urls) {
+    for (const urlOriginal of urls) {
+        const url = normalizarUrlPropiedad(urlOriginal);
         const yaEnCola = await promisifyRequest(index.get(url));
         if (yaEnCola) continue;
         await promisifyRequest(store.add({ url, estado: ESTADO_COLA.PENDIENTE, fecha_encolado: new Date().toISOString() }));
@@ -352,12 +451,10 @@ export async function importarBaseDeDatos(json) {
             existentes++;
             continue;
         }
-        const db = await openDB();
-        const t = tx(db, [STORE_PROPIEDADES], 'readwrite');
-        const store = t.objectStore(STORE_PROPIEDADES);
         const { id, ...resto } = propiedad;
-        await promisifyRequest(store.add(resto));
-        nuevos++;
+        const resultado = await guardarPropiedad(resto);
+        if (resultado.esNueva) nuevos++;
+        else existentes++;
     }
     return { nuevos, existentes };
 }

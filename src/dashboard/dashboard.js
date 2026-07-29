@@ -497,7 +497,9 @@ document.getElementById('btn-recuperar-historial').addEventListener('click', asy
     try {
         const resultado = await enviarMensaje({ type: MSG.RECUPERAR_DESDE_HISTORIAL });
         if (!resultado?.ok) throw new Error(resultado?.error || 'No fue posible recuperar las propiedades.');
-        mostrarToast(`Recuperación terminada: ${resultado.recuperadas}/${resultado.encontradas} restauradas${resultado.noDisponibles ? `, ${resultado.noDisponibles} no disponibles` : ''}`);
+        const resumenFallos = Object.entries(resultado.fallos || {})
+            .map(([motivo, cantidad]) => `${cantidad}× ${motivo}`).join('; ');
+        mostrarToast(`Recuperación terminada: ${resultado.recuperadas}/${resultado.encontradas} restauradas${resultado.noDisponibles ? `, ${resultado.noDisponibles} no disponibles${resumenFallos ? ` (${resumenFallos})` : ''}` : ''}`, 8000);
         await cargarYRenderizarTabla();
     } catch (error) {
         mostrarToast(`Error al recuperar: ${error.message}`);
